@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'dashboard_screen.dart';
 import 'register_screen.dart';
@@ -28,6 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = false);
 
     if (token != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -104,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
+
                   // Concept: circular badge with a custom-drawn logo inside
                   Center(
                     child: Container(
@@ -132,7 +137,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 28),
+
                   const Text(
                     'Step into Nexora',
                     textAlign: TextAlign.center,
@@ -143,13 +150,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       letterSpacing: 0.3,
                     ),
                   ),
+
                   const SizedBox(height: 8),
+
                   const Text(
                     'Sign in to continue your journey',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14.5, color: Colors.white54),
                   ),
+
                   const SizedBox(height: 40),
+
                   Container(
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
@@ -169,7 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icons.mail_outline_rounded,
                           ),
                         ),
+
                         const SizedBox(height: 18),
+
                         TextField(
                           controller: passwordController,
                           obscureText: obscurePassword,
@@ -192,7 +205,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+
                         const SizedBox(height: 26),
+
                         SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -243,7 +258,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 26),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -251,6 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         "Don't have an account? ",
                         style: TextStyle(color: Colors.white54, fontSize: 14),
                       ),
+
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -271,6 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 30),
                 ],
               ),
@@ -300,6 +319,7 @@ class _NexoraLogoPainter extends CustomPainter {
     final path = Path();
     final w = size.width;
     final h = size.height;
+
     path.moveTo(w * 0.32, h * 0.68);
     path.lineTo(w * 0.32, h * 0.32);
     path.cubicTo(w * 0.32, h * 0.32, w * 0.68, h * 0.68, w * 0.68, h * 0.32);
