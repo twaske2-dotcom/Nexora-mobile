@@ -3,9 +3,11 @@ import 'package:file_picker/file_picker.dart';
 import 'api_service.dart';
 import 'resume_builder_screen.dart';
 import 'cover_letter_screen.dart';
+import 'resume_analysis_screen.dart';
 
 class ResumeUploadScreen extends StatefulWidget {
   final String token;
+
   const ResumeUploadScreen({super.key, required this.token});
 
   @override
@@ -13,64 +15,137 @@ class ResumeUploadScreen extends StatefulWidget {
 }
 
 class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
-  // Concept: nullable state - no file selected yet
   PlatformFile? selectedFile;
+
   bool isUploading = false;
   String? previewText;
+
   int? qualityScore;
   List<dynamic> qualityTips = [];
+
   Map<String, dynamic>? extracted;
+
   bool isFetchingFeedback = false;
   List<String>? aiFeedback;
+  String? aiFeedbackError;
 
-  // Concept: opens the native file picker, restricted to pdf/docx
   Future<void> pickFile() async {
-    final files = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'docx'],
-    );
-    if (files.isNotEmpty) {
+    try {
+      final List<PlatformFile> result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx'],
+      );
+
+      if (result.isEmpty || !mounted) {
+        return;
+      }
+
+      final file = result.first;
+
+      if (file.path == null || file.path!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not access the selected file.'),
+            backgroundColor: Color(0xFFB3382C),
+          ),
+        );
+        return;
+      }
+
       setState(() {
-        selectedFile = files.first;
+        selectedFile = file;
         previewText = null;
+        qualityScore = null;
+        qualityTips = [];
+        extracted = null;
+        aiFeedback = null;
+        aiFeedbackError = null;
       });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not select the file. Please try again.'),
+          backgroundColor: Color(0xFFB3382C),
+        ),
+      );
     }
   }
 
   Future<void> uploadFile() async {
-    if (selectedFile == null || selectedFile!.path == null) return;
+    if (selectedFile == null ||
+        selectedFile!.path == null ||
+        selectedFile!.path!.isEmpty ||
+        isUploading) {
+      return;
+    }
 
-    setState(() => isUploading = true);
+    setState(() {
+      isUploading = true;
+      aiFeedback = null;
+      aiFeedbackError = null;
+    });
 
-    final result = await ApiService.uploadResume(
-      widget.token,
-      selectedFile!.path!,
-      selectedFile!.name,
-    );
+    final file = selectedFile!;
 
-    setState(() => isUploading = false);
+    try {
+      final result = await ApiService.uploadResume(
+        widget.token,
+        file.path!,
+        file.name,
+      );
 
-    if (result != null) {
+      if (!mounted) return;
+
       setState(() {
-        previewText = result['preview'];
-        final quality = result['quality'];
-        qualityScore = quality != null ? quality['score'] : null;
-        qualityTips = quality != null ? (quality['tips'] ?? []) : [];
-        extracted = result['extracted'] != null
-            ? Map<String, dynamic>.from(result['extracted'])
-            : null;
-        aiFeedback = null;
+        isUploading = false;
       });
-      if (mounted) {
+
+      if (result != null) {
+        final dynamic quality = result['quality'];
+        final dynamic extractedData = result['extracted'];
+
+        int? score;
+
+        if (quality is Map && quality['score'] != null) {
+          final dynamic rawScore = quality['score'];
+
+          if (rawScore is int) {
+            score = rawScore;
+          } else {
+            score = int.tryParse(rawScore.toString());
+          }
+        }
+
+        List<dynamic> tips = [];
+
+        if (quality is Map && quality['tips'] is List) {
+          tips = List<dynamic>.from(quality['tips']);
+        }
+
+        Map<String, dynamic>? extractedMap;
+
+        if (extractedData is Map) {
+          extractedMap = Map<String, dynamic>.from(extractedData);
+        }
+
+        setState(() {
+          previewText = result['preview']?.toString();
+          qualityScore = score;
+          qualityTips = tips;
+          extracted = extractedMap;
+          aiFeedback = null;
+          aiFeedbackError = null;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Resume uploaded successfully!'),
             backgroundColor: Color(0xFF3E9C63),
           ),
         );
-      }
-    } else {
-      if (mounted) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Upload failed. Try again.'),
@@ -78,16 +153,88 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isUploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Upload failed. Check your connection and try again.'),
+          backgroundColor: Color(0xFFB3382C),
+        ),
+      );
     }
   }
 
   Future<void> fetchFeedback() async {
-    setState(() => isFetchingFeedback = true);
-    final tips = await ApiService.getResumeFeedback(widget.token);
+    if (isFetchingFeedback) {
+      return;
+    }
+
     setState(() {
-      isFetchingFeedback = false;
-      aiFeedback = tips;
+      isFetchingFeedback = true;
+      aiFeedbackError = null;
     });
+
+    try {
+      final tips = await ApiService.getResumeFeedback(widget.token);
+
+      if (!mounted) return;
+
+      if (tips.isEmpty) {
+        setState(() {
+          isFetchingFeedback = false;
+          aiFeedback = null;
+          aiFeedbackError = 'AI feedback could not be generated right now.';
+        });
+        return;
+      }
+
+      setState(() {
+        isFetchingFeedback = false;
+        aiFeedback = tips;
+        aiFeedbackError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isFetchingFeedback = false;
+        aiFeedback = null;
+        aiFeedbackError = 'Could not get AI feedback. Please try again.';
+      });
+    }
+  }
+
+  void openResumeBuilder() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ResumeBuilderScreen(token: widget.token, prefill: extracted),
+      ),
+    );
+  }
+
+  void openResumeAnalysis() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResumeAnalysisScreen(token: widget.token),
+      ),
+    );
+  }
+
+  void openCoverLetter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CoverLetterScreen(token: widget.token),
+      ),
+    );
   }
 
   @override
@@ -120,9 +267,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 10),
-                // Concept: GestureDetector wrapping a dashed-style drop zone
+
                 GestureDetector(
-                  onTap: pickFile,
+                  onTap: isUploading ? null : pickFile,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     decoration: BoxDecoration(
@@ -174,8 +321,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 24),
-                // Concept: gradient upload button, disabled until a file is picked
+
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
@@ -199,10 +347,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                                   Colors.white.withValues(alpha: 0.08),
                                   Colors.white.withValues(alpha: 0.08),
                                 ]
-                              : [
-                                  const Color(0xFF7B5CF0),
-                                  const Color(0xFFB06AB3),
-                                ],
+                              : const [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -229,6 +374,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                     ),
                   ),
                 ),
+
                 if (previewText != null) ...[
                   const SizedBox(height: 28),
                   Container(
@@ -264,14 +410,19 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                     ),
                   ),
                 ],
-                if (extracted != null && (extracted!['skills'] ?? '').toString().isNotEmpty) ...[
+
+                if (extracted != null &&
+                    (extracted!['skills'] ?? '').toString().isNotEmpty) ...[
                   const SizedBox(height: 20),
                   const Text(
                     'Detected skills',
-                    style: TextStyle(color: Colors.white54, fontSize: 12.5, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  // Concept: Wrap - lays chips out and flows to the next line automatically
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -280,20 +431,31 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                         .split(RegExp(r'[,•|]'))
                         .map((s) => s.trim())
                         .where((s) => s.isNotEmpty && s.length < 30)
-                        .map((skill) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF7B5CF0).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
+                        .map(
+                          (skill) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF7B5CF0,
+                              ).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              skill,
+                              style: const TextStyle(
+                                color: Color(0xFFB9A8F5),
+                                fontSize: 12.5,
                               ),
-                              child: Text(
-                                skill,
-                                style: const TextStyle(color: Color(0xFFB9A8F5), fontSize: 12.5),
-                              ),
-                            ))
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ],
+
                 if (qualityScore != null) ...[
                   const SizedBox(height: 28),
                   Container(
@@ -301,7 +463,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +474,11 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                           children: [
                             const Text(
                               'Resume Quality',
-                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const Spacer(),
                             Text(
@@ -324,59 +492,70 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        // Concept: ClipRRect + LinearProgressIndicator - rounded score bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
-                            value: qualityScore! / 100,
+                            value: (qualityScore! / 100).clamp(0.0, 1.0),
                             minHeight: 8,
-                            backgroundColor: Colors.white.withValues(alpha: 0.08),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
+                            ),
                             color: _scoreColor(qualityScore!),
                           ),
                         ),
+
                         if (qualityTips.isNotEmpty) ...[
                           const SizedBox(height: 14),
-                          ...qualityTips.map((tip) => Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.circle, size: 5, color: Colors.white38),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        tip.toString(),
-                                        style: const TextStyle(color: Colors.white54, fontSize: 12.5),
+                          ...qualityTips.map(
+                            (tip) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.circle,
+                                    size: 5,
+                                    color: Colors.white38,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      tip.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12.5,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              )),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
+
                         if (qualityScore! < 80) ...[
                           const SizedBox(height: 8),
                           SizedBox(
                             width: double.infinity,
                             child: TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ResumeBuilderScreen(
-                                    token: widget.token,
-                                    prefill: extracted,
-                                  ),
-                                  ),
-                                );
-                              },
+                              onPressed: openResumeBuilder,
                               style: TextButton.styleFrom(
-                                backgroundColor: const Color(0xFF7B5CF0).withValues(alpha: 0.15),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                backgroundColor: const Color(
+                                  0xFF7B5CF0,
+                                ).withValues(alpha: 0.15),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               child: const Text(
                                 'Build a professional resume instead',
-                                style: TextStyle(color: Color(0xFFB06AB3), fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: Color(0xFFB06AB3),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -385,9 +564,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                     ),
                   ),
                 ],
+
                 if (previewText != null) ...[
                   const SizedBox(height: 20),
-                  // Concept: gradient card with a subtle glow - visually distinct "premium" feature
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -400,18 +579,28 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF7B5CF0).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: const Color(0xFF7B5CF0).withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.auto_awesome, color: Color(0xFFB06AB3), size: 18),
+                            const Icon(
+                              Icons.auto_awesome,
+                              color: Color(0xFFB06AB3),
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             const Text(
                               'AI Resume Feedback',
-                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -421,37 +610,136 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                         const SizedBox(height: 14),
-                        if (aiFeedback == null)
+
+                        if (isFetchingFeedback)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Generating feedback...',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (aiFeedbackError != null)
+                          Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFB3382C,
+                                  ).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFFB3382C,
+                                    ).withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Text(
+                                  aiFeedbackError!,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 44,
+                                child: ElevatedButton(
+                                  onPressed: fetchFeedback,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    padding: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF7B5CF0),
+                                          Color(0xFFB06AB3),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Retry AI Feedback',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else if (aiFeedback == null)
                           SizedBox(
                             width: double.infinity,
                             height: 44,
                             child: ElevatedButton(
-                              onPressed: isFetchingFeedback ? null : fetchFeedback,
+                              onPressed: fetchFeedback,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
                                 padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               child: Ink(
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                                    colors: [
+                                      Color(0xFF7B5CF0),
+                                      Color(0xFFB06AB3),
+                                    ],
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Container(
                                   alignment: Alignment.center,
-                                  child: isFetchingFeedback
-                                      ? const SizedBox(
-                                          height: 18,
-                                          width: 18,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                        )
-                                      : const Text(
-                                          '✨ Get AI Feedback',
-                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13.5),
-                                        ),
+                                  child: const Text(
+                                    '✨ Get AI Feedback',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -459,46 +747,89 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                         else
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: aiFeedback!
-                                .map((tip) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
+                            children: [
+                              ...aiFeedback!
+                                  .map(
+                                    (tip) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
                                       child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const Text('✨ ', style: TextStyle(fontSize: 13)),
+                                          const Text(
+                                            '✨ ',
+                                            style: TextStyle(fontSize: 13),
+                                          ),
                                           Expanded(
                                             child: Text(
                                               tip,
-                                              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                                height: 1.4,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
+                              const SizedBox(height: 4),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 40,
+                                child: OutlinedButton(
+                                  onPressed: fetchFeedback,
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: const Color(
+                                        0xFFB06AB3,
+                                      ).withValues(alpha: 0.45),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Regenerate Feedback',
+                                    style: TextStyle(
+                                      color: Color(0xFFB9A8F5),
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),
                   ),
                 ],
+
+                // -------------------------------------------------
+                // FULL RESUME ANALYSIS
+                // -------------------------------------------------
                 if (previewText != null) ...[
                   const SizedBox(height: 16),
-                  // Concept: quick-access card linking to the Cover Letter generator
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CoverLetterScreen(token: widget.token),
-                        ),
-                      );
-                    },
+                    onTap: openResumeAnalysis,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF7B5CF0).withValues(alpha: 0.18),
+                            const Color(0xFFB06AB3).withValues(alpha: 0.12),
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        border: Border.all(
+                          color: const Color(0xFF7B5CF0).withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -507,23 +838,92 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                             height: 38,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFF7B5CF0).withValues(alpha: 0.15),
+                              color: const Color(
+                                0xFF7B5CF0,
+                              ).withValues(alpha: 0.2),
                             ),
-                            child: const Icon(Icons.mail_outline_rounded, color: Color(0xFFB06AB3), size: 18),
+                            child: const Icon(
+                              Icons.insights_rounded,
+                              color: Color(0xFFB06AB3),
+                              size: 18,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Text(
-                              'Generate a Cover Letter',
-                              style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+                              'View Full Analysis',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
+
+                // -------------------------------------------------
+                // COVER LETTER
+                // -------------------------------------------------
+                if (previewText != null) ...[
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: openCoverLetter,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(
+                                0xFF7B5CF0,
+                              ).withValues(alpha: 0.15),
+                            ),
+                            child: const Icon(
+                              Icons.mail_outline_rounded,
+                              color: Color(0xFFB06AB3),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Generate a Cover Letter',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -532,10 +932,15 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
     );
   }
 
-  // Concept: color-coding the score - red/yellow/green like a traffic light
   Color _scoreColor(int score) {
-    if (score >= 80) return const Color(0xFF6FDB9A);
-    if (score >= 50) return const Color(0xFFE0B84A);
+    if (score >= 80) {
+      return const Color(0xFF6FDB9A);
+    }
+
+    if (score >= 50) {
+      return const Color(0xFFE0B84A);
+    }
+
     return const Color(0xFFE07A6A);
   }
 }

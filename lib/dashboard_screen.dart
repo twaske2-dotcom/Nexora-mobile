@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'api_service.dart';
 import 'resume_upload_screen.dart';
+import 'resume_history_screen.dart';
+import 'external_jobs_screen.dart';
 import 'help_screen.dart';
 import 'nexora_logo.dart';
+import 'login_screen.dart';
 import 'match_detail_screen.dart';
-import 'external_jobs_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String token;
+
   const DashboardScreen({super.key, required this.token});
 
   @override
@@ -16,34 +21,110 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> jobs = [];
-  // Concept: jobId (as String) -> match percentage
-  Map<String, dynamic> matchScores = {};
+
   bool isLoading = true;
+
+  Map<String, dynamic> matchScores = {};
 
   @override
   void initState() {
     super.initState();
-    loadData();
+    loadJobs();
   }
 
-  Future<void> loadData() async {
-    // Concept: Future.wait - runs both API calls in parallel instead of one after another
-    final results = await Future.wait([
-      ApiService.getJobs(widget.token),
-      ApiService.getMatchScores(widget.token),
-    ]);
-    setState(() {
-      jobs = results[0] as List<dynamic>;
-      matchScores = results[1] as Map<String, dynamic>;
-      isLoading = false;
-    });
+  Future<void> loadJobs() async {
+    try {
+      final result = await ApiService.getJobs(widget.token);
+
+      Map<String, dynamic> scores = {};
+
+      try {
+        scores = await ApiService.getMatchScores(widget.token);
+      } catch (_) {
+        scores = {};
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        jobs = result;
+        matchScores = scores;
+        isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        jobs = [];
+        matchScores = {};
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove('auth_token');
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  Color _matchColor(int score) {
+    if (score >= 70) {
+      return const Color(0xFF6FDB9A);
+    }
+
+    if (score >= 40) {
+      return const Color(0xFFE0B84A);
+    }
+
+    return const Color(0xFFE07A6A);
+  }
+
+  int? _scoreForJob(dynamic job) {
+    if (job is! Map) {
+      return null;
+    }
+
+    final jobId = job['jobId'];
+
+    if (jobId == null) {
+      return null;
+    }
+
+    final value = matchScores[jobId.toString()];
+
+    if (value is num) {
+      return value.round().clamp(0, 100);
+    }
+
+    if (value is String) {
+      final parsed = num.tryParse(value);
+
+      if (parsed != null) {
+        return parsed.round().clamp(0, 100);
+      }
+    }
+
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final openCount = jobs
-        .where((j) => (j['status'] ?? '').toString().toUpperCase() == 'OPEN')
-        .length;
+    final openCount = jobs.where((j) {
+      if (j is! Map) return false;
+
+      final status = (j['status'] ?? '').toString().toUpperCase();
+
+      return status == 'OPEN';
+    }).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D14),
@@ -77,6 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+
           Positioned(
             top: -80,
             right: -60,
@@ -94,11 +176,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+
           SafeArea(
             child: RefreshIndicator(
               color: const Color(0xFF7B5CF0),
               backgroundColor: const Color(0xFF1A1530),
-              onRefresh: loadData,
+              onRefresh: loadJobs,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -125,6 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
+
                               const Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,6 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                               ),
+
                               GestureDetector(
                                 onTap: () {
                                   Navigator.push(
@@ -184,9 +269,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                               ),
+
+                              const SizedBox(width: 10),
+
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ResumeHistoryScreen(
+                                        token: widget.token,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.history_rounded,
+                                    color: Colors.white70,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 10),
+
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ExternalJobsScreen(
+                                        token: widget.token,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.travel_explore_rounded,
+                                    color: Colors.white70,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 10),
+
+                              GestureDetector(
+                                onTap: _logout,
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.logout_rounded,
+                                    color: Colors.white70,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
+
                           const SizedBox(height: 26),
+
                           const Text(
                             'Find your next role',
                             style: TextStyle(
@@ -196,7 +373,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               letterSpacing: 0.2,
                             ),
                           ),
+
                           const SizedBox(height: 18),
+
                           Row(
                             children: [
                               Expanded(
@@ -216,54 +395,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ExternalJobsScreen(token: widget.token),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF7B5CF0),
-                                    Color(0xFFB06AB3),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.public_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Explore Jobs Worldwide',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
+
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(22, 24, 22, 10),
@@ -288,6 +424,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
+
                   if (isLoading)
                     const SliverToBoxAdapter(
                       child: Padding(
@@ -327,38 +464,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   else
                     SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        final job = jobs[index];
+                        final rawJob = jobs[index];
+
+                        if (rawJob is! Map) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final job = Map<String, dynamic>.from(rawJob);
+
                         final status = (job['status'] ?? '').toString();
+
                         final isOpen = status.toUpperCase() == 'OPEN';
-                        // Concept: looking up this job's match score by its id (as a String key)
-                        final jobId = job['jobId'].toString();
-                        // Concept: JSON numbers can decode as int or double, so handle both safely
-                        final rawScore = matchScores[jobId];
-                        final matchPercent = rawScore == null
-                            ? null
-                            : (rawScore as num).round();
+
+                        final score = _scoreForJob(job);
 
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                           child: GestureDetector(
-                            onTap: matchPercent == null
-                                ? null
-                                : () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => MatchDetailScreen(
-                                          token: widget.token,
-                                          jobId: job['jobId'] is int
-                                              ? job['jobId']
-                                              : int.parse(
-                                                  job['jobId'].toString(),
-                                                ),
-                                          jobTitle: job['title'] ?? '',
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            onTap: () {
+                              final jobId = job['jobId'];
+
+                              if (jobId == null) {
+                                return;
+                              }
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MatchDetailScreen(
+                                    token: widget.token,
+                                    jobId: jobId,
+                                    jobTitle: job['title'] ?? 'Job',
+                                  ),
+                                ),
+                              );
+                            },
                             child: Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
@@ -401,13 +541,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 14),
+
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              job['title'] ?? '',
+                                              (job['title'] ?? '').toString(),
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 15.5,
@@ -425,6 +566,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ],
                                         ),
                                       ),
+
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 10,
@@ -453,6 +595,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ],
                                   ),
+
+                                  if (score != null) ...[
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _matchColor(
+                                              score,
+                                            ).withValues(alpha: 0.18),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.bolt,
+                                                size: 12,
+                                                color: _matchColor(score),
+                                              ),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                '$score% match',
+                                                style: TextStyle(
+                                                  color: _matchColor(score),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+
                                   if ((job['requiredSkills'] ?? '')
                                       .toString()
                                       .isNotEmpty) ...[
@@ -465,7 +649,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      job['requiredSkills'],
+                                      job['requiredSkills'].toString(),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -475,38 +659,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                   ],
-                                  // Concept: only show the match badge if the backend actually returned a score for this job
-                                  if (matchPercent != null) ...[
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.bolt_rounded,
-                                          color: matchPercent >= 60
-                                              ? const Color(0xFF6FDB9A)
-                                              : const Color(0xFFE0A94F),
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '$matchPercent% match with your resume',
-                                          style: TextStyle(
-                                            color: matchPercent >= 60
-                                                ? const Color(0xFF6FDB9A)
-                                                : const Color(0xFFE0A94F),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Icon(
-                                          Icons.chevron_right_rounded,
-                                          color: Colors.white24,
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
@@ -514,6 +666,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       }, childCount: jobs.length),
                     ),
+
                   const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 ],
               ),
@@ -529,6 +682,7 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+
   const _StatCard({
     required this.label,
     required this.value,
