@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.resumeapp_mobile"
+    namespace = "com.nexora.resume"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -16,10 +16,12 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.resumeapp_mobile"
+        applicationId = "com.nexora.resume"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // record (audio recording) requires at least API 23, so pin it here
+        // instead of Flutter's default to avoid a manifest-merger failure.
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

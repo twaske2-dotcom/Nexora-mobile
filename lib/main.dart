@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 
 // Concept: entry point of every Flutter app
 void main() {
+  // App khulte hi soye hue server ko jaga do (fire-and-forget).
+  // Jab tak user login screen dekhta/type karta hai, server ready ho jaata hai.
+  ApiService.wakeUpServer();
   runApp(const MyApp());
 }
 

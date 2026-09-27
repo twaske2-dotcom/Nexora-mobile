@@ -5,7 +5,11 @@ import 'api_service.dart';
 class ResumeAnalysisScreen extends StatefulWidget {
   final String token;
 
-  const ResumeAnalysisScreen({super.key, required this.token});
+  // When set, analyse THIS specific past upload (opened from History).
+  // When null, analyse the latest resume (opened from dashboard/upload).
+  final int? resumeId;
+
+  const ResumeAnalysisScreen({super.key, required this.token, this.resumeId});
 
   @override
   State<ResumeAnalysisScreen> createState() => _ResumeAnalysisScreenState();
@@ -24,7 +28,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
 
   Future<void> load() async {
     try {
-      final result = await ApiService.getResumeAnalysis(widget.token);
+      final result = widget.resumeId != null
+          ? await ApiService.getResumeAnalysisById(widget.token, widget.resumeId!)
+          : await ApiService.getResumeAnalysis(widget.token);
 
       if (!mounted) return;
 

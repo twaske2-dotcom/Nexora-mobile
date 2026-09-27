@@ -149,6 +149,25 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
     return value.toString().trim();
   }
 
+  // Records the application (best-effort) and then opens the job link.
+  // Recording failures are silent so they never block opening the job.
+  Future<void> _applyToJob({
+    required String title,
+    required String company,
+    required String location,
+    required String url,
+  }) async {
+    ApiService.recordApplication(
+      widget.token,
+      title: title.isEmpty ? 'Job application' : title,
+      company: company.isEmpty ? null : company,
+      location: location.isEmpty ? null : location,
+      jobUrl: url,
+    );
+
+    await _openJob(url);
+  }
+
   String _salaryText(dynamic min, dynamic max) {
     final minValue = _number(min);
     final maxValue = _number(max);
@@ -535,7 +554,12 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                             ? null
                             : () {
                                 Navigator.of(context).pop();
-                                _openJob(redirectUrl);
+                                _applyToJob(
+                                  title: title,
+                                  company: company,
+                                  location: location,
+                                  url: redirectUrl,
+                                );
                               },
                         icon: const Icon(Icons.open_in_new_rounded),
                         label: const Text(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'api_service.dart';
+import 'app_background.dart';
 
 // Concept: small data class - holds controllers for one experience entry
 class _ExperienceEntry {
@@ -137,14 +138,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D14), Color(0xFF1A1530), Color(0xFF0D0D14)],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(20),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'api_service.dart';
+import 'app_background.dart';
 
 class CoverLetterScreen extends StatefulWidget {
   final String token;
@@ -30,20 +31,24 @@ class _CoverLetterScreenState extends State<CoverLetterScreen> {
       errorText = null;
     });
 
-    final result = await ApiService.generateCoverLetter(
-      widget.token,
-      jobTitleCtrl.text.trim(),
-      companyCtrl.text.trim(),
-    );
-
-    setState(() {
-      isGenerating = false;
-      if (result != null) {
+    try {
+      final result = await ApiService.generateCoverLetter(
+        widget.token,
+        jobTitleCtrl.text.trim(),
+        companyCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        isGenerating = false;
         letter = result;
-      } else {
-        errorText = "Couldn't generate a cover letter. Make sure you've uploaded a resume.";
-      }
-    });
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isGenerating = false;
+        errorText = e.message;
+      });
+    }
   }
 
   void copyToClipboard() {
@@ -72,14 +77,7 @@ class _CoverLetterScreenState extends State<CoverLetterScreen> {
         title: const Text('Cover Letter', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D14), Color(0xFF1A1530), Color(0xFF0D0D14)],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),

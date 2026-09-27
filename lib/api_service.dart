@@ -16,7 +16,30 @@ class ApiService {
   static const String baseUrl =
       'https://resumeapp-backend-uo3n.onrender.com/api';
 
-  static const Duration requestTimeout = Duration(seconds: 30);
+  // Render ka free server so jaata hai; jaagne mein ~50s lag sakte hain,
+  // isliye timeout lamba rakha hai warna pehli request "network error" degi.
+  static const Duration requestTimeout = Duration(seconds: 60);
+
+  // File upload + PDF parsing thoda aur time le sakta hai.
+  static const Duration uploadTimeout = Duration(seconds: 90);
+
+  // AI (Gemini) calls generation karte hain — cover letter/feedback/chat.
+  // Backend ka read timeout 60s hai + Render cold start, isliye yaha thoda
+  // aur buffer rakha hai warna slow reply "timeout" ban jaati.
+  static const Duration aiTimeout = Duration(seconds: 120);
+
+  // App khulte hi ye call hoti hai. Render ka soya hua server jaga deti hai
+  // taaki jab tak user login type kare, server ready ho jaaye.
+  // Fire-and-forget: fail ho to bhi chup-chaap ignore, koi error nahi.
+  static Future<void> wakeUpServer() async {
+    try {
+      await http
+          .get(Uri.parse('$baseUrl/health'))
+          .timeout(const Duration(seconds: 90));
+    } catch (_) {
+      // Ignore - ye sirf warm-up hai
+    }
+  }
 
   static Future<String?> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/auth/login');
@@ -122,7 +145,7 @@ class ApiService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'message': message}),
           )
-          .timeout(requestTimeout);
+          .timeout(aiTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -156,9 +179,14 @@ class ApiService {
         await http.MultipartFile.fromPath('file', filePath, filename: fileName),
       );
 
-      final streamedResponse = await request.send().timeout(requestTimeout);
+      final streamedResponse = await request.send().timeout(uploadTimeout);
 
       final response = await http.Response.fromStream(streamedResponse);
+
+      // TEMP DEBUG — remove after diagnosing upload failure
+      print('UPLOAD >>> url=$url');
+      print('UPLOAD >>> status=${response.statusCode}');
+      print('UPLOAD >>> body=${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -170,6 +198,8 @@ class ApiService {
 
       return null;
     } catch (e) {
+      // TEMP DEBUG — remove after diagnosing upload failure
+      print('UPLOAD >>> EXCEPTION: $e');
       return null;
     }
   }
@@ -245,7 +275,7 @@ class ApiService {
               'Authorization': 'Bearer $token',
             },
           )
-          .timeout(requestTimeout);
+          .timeout(aiTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -263,6 +293,40 @@ class ApiService {
 
   static Future<Map<String, dynamic>?> getResumeAnalysis(String token) async {
     final url = Uri.parse('$baseUrl/resume/analysis');
+
+    try {
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Analysis for ONE specific past upload (tapped in History), computed live
+  // on the backend from that resume's own text — so every resume shows its
+  // own score, breakdown and fixes, not just the latest one.
+  static Future<Map<String, dynamic>?> getResumeAnalysisById(
+    String token,
+    int resumeId,
+  ) async {
+    final url = Uri.parse('$baseUrl/resume/analysis/$resumeId');
 
     try {
       final response = await http
@@ -317,7 +381,10 @@ class ApiService {
     }
   }
 
-  static Future<String?> generateCoverLetter(
+  // Cover letter generate karta hai. Success pe letter return, warna
+  // backend ka asli error message ApiException mein throw karta hai taaki
+  // screen "upload a resume" jaisa galat message na dikhaye.
+  static Future<String> generateCoverLetter(
     String token,
     String jobTitle,
     String companyName,
@@ -337,19 +404,200 @@ class ApiService {
               'companyName': companyName,
             }),
           )
-          .timeout(requestTimeout);
+          .timeout(aiTimeout);
+
+      final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
         if (data is Map && data['letter'] is String) {
-          return data['letter'];
+          return data['letter'] as String;
         }
+        throw ApiException('The AI returned an unexpected response.');
       }
 
-      return null;
+      // Backend sends {"error": "..."} — show that instead of a guess.
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Server error (${response.statusCode}). Please try again.');
+    } on ApiException {
+      rethrow;
     } catch (e) {
-      return null;
+      throw ApiException(
+        "Couldn't reach the server. It may be waking up — try again in a moment.",
+      );
+    }
+  }
+
+  // ---- Nexora Ascend (AI mentor "Nexa") ----
+  // Resume-adaptive roadmap. Backend detects role/domain from the resume and
+  // returns {role, level, summary, stages[], insiderEdge[]}. Always returns a
+  // usable map (backend sends a general fallback if AI/resume is unavailable).
+  static Future<Map<String, dynamic>> getMentorRoadmap(String token) async {
+    final url = Uri.parse('$baseUrl/mentor/roadmap');
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(aiTimeout);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      if (response.statusCode == 404) {
+        throw ApiException(
+            "Nexora Ascend isn't live on the server yet. Redeploy the backend, then try again.");
+      }
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Server error (${response.statusCode}). Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        "Couldn't build your roadmap. The server may be waking up — try again in a moment.",
+      );
+    }
+  }
+
+  // Learn with Nexa: resume-aware mentor chat. Returns the reply text.
+  static Future<String> mentorChat(String token, String message) async {
+    final url = Uri.parse('$baseUrl/mentor/chat');
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'message': message}),
+          )
+          .timeout(aiTimeout);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data is Map && data['reply'] is String) {
+        return data['reply'] as String;
+      }
+      if (response.statusCode == 404) {
+        throw ApiException(
+            "Nexora Ascend isn't live on the server yet. Redeploy the backend, then try again.");
+      }
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Server error (${response.statusCode}). Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        "Couldn't reach Nexa right now. The server may be waking up — try again in a moment.",
+      );
+    }
+  }
+
+  // Interview questions tailored to the resume. Returns {role, questions:[...]}.
+  static Future<Map<String, dynamic>> getInterviewQuestions(String token) async {
+    final url = Uri.parse('$baseUrl/mentor/interview/questions');
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(aiTimeout);
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      if (response.statusCode == 404) {
+        throw ApiException(
+            "Nexora Ascend isn't live on the server yet. Redeploy the backend, then try again.");
+      }
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Server error (${response.statusCode}). Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        "Couldn't start the interview. The server may be waking up — try again in a moment.",
+      );
+    }
+  }
+
+  // Sends the transcript (+ optional webcam snapshot) and returns structured
+  // feedback: {overall, body, confidence, qa[]}.
+  static Future<Map<String, dynamic>> getInterviewFeedback(
+    String token, {
+    List<Map<String, String>> transcript = const [],
+    String? imageBase64,
+    String? audioBase64,
+    String? audioMime,
+    String? videoBase64,
+    String? videoMime,
+    List<String> questions = const [],
+  }) async {
+    final url = Uri.parse('$baseUrl/mentor/interview/feedback');
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'transcript': transcript,
+              if (questions.isNotEmpty) 'questions': questions,
+              if (imageBase64 != null && imageBase64.isNotEmpty)
+                'imageBase64': imageBase64,
+              if (audioBase64 != null && audioBase64.isNotEmpty) ...{
+                'audioBase64': audioBase64,
+                'audioMime': audioMime ?? 'audio/aac',
+              },
+              if (videoBase64 != null && videoBase64.isNotEmpty) ...{
+                'videoBase64': videoBase64,
+                'videoMime': videoMime ?? 'video/mp4',
+              },
+            }),
+          )
+          .timeout(aiTimeout);
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      if (response.statusCode == 404) {
+        throw ApiException(
+            "Nexora Ascend isn't live on the server yet. Redeploy the backend, then try again.");
+      }
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Server error (${response.statusCode}). Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        "Couldn't build your feedback. The server may be waking up — try again in a moment.",
+      );
     }
   }
 
@@ -421,6 +669,77 @@ class ApiService {
 
         if (data is Map && data['resumes'] is List) {
           return data['resumes'];
+        }
+      }
+
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Saves one application after the user taps "Apply Now".
+  // Fire-and-forget style: returns true on success, false on any failure,
+  // so a tracking hiccup never blocks the user from opening the job link.
+  static Future<bool> recordApplication(
+    String token, {
+    required String title,
+    String? company,
+    String? location,
+    String? jobUrl,
+    double? matchScore,
+  }) async {
+    final url = Uri.parse('$baseUrl/applications');
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'title': title,
+              'company': company,
+              'location': location,
+              'jobUrl': jobUrl,
+              'matchScore': matchScore,
+            }),
+          )
+          .timeout(requestTimeout);
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Returns the user's applied jobs, newest first.
+  // Each item: {id, title, company, location, jobUrl, matchScore, status, appliedAt}
+  static Future<List<dynamic>> getApplications(String token) async {
+    final url = Uri.parse('$baseUrl/applications');
+
+    try {
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data is List) {
+          return data;
+        }
+
+        if (data is Map && data['content'] is List) {
+          return data['content'];
         }
       }
 

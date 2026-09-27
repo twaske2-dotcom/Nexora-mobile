@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora Ascend — Voice Tester (Nexa)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0D0D14; color:#EDEAF6;
+         padding:22px; max-width:760px; margin:0 auto; }
+  h1 { font-size:22px; font-weight:700; }
+  h1 span { background:linear-gradient(90deg,#7B5CF0,#B06AB3); -webkit-background-clip:text;
+            background-clip:text; -webkit-text-fill-color:transparent; }
+  .sub { color:#9A93B8; font-size:13px; margin:6px 0 18px; }
+  .panel { background:#16131f; border:1px solid #26212f; border-radius:14px; padding:16px; margin-bottom:16px; }
+  label { font-size:12px; color:#9A93B8; display:block; margin-bottom:6px; }
+  textarea { width:100%; background:#0D0D14; color:#EDEAF6; border:1px solid #2c2640;
+             border-radius:10px; padding:10px; font-size:14px; resize:vertical; min-height:60px; }
+  .row { display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  .row .fld { flex:1; min-width:150px; }
+  input[type=range] { width:100%; accent-color:#7B5CF0; }
+  .val { color:#B79CFF; font-weight:600; }
+  .toggle { display:flex; align-items:center; gap:8px; font-size:13px; color:#EDEAF6; cursor:pointer; }
+  .card { display:flex; align-items:center; gap:12px; background:#16131f; border:1px solid #26212f;
+          border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .card .info { flex:1; }
+  .card .nm { font-size:15px; font-weight:600; }
+  .card .lg { font-size:12px; color:#9A93B8; margin-top:2px; }
+  .tag { font-size:10px; padding:2px 8px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+  .tag.mam { background:rgba(111,219,154,.16); color:#6FDB9A; }
+  .tag.nat { background:rgba(123,92,240,.18); color:#B79CFF; }
+  .play { background:linear-gradient(90deg,#7B5CF0,#B06AB3); color:#fff; border:none; cursor:pointer;
+          padding:9px 16px; border-radius:10px; font-size:14px; font-weight:600; white-space:nowrap; }
+  .play:active { transform:scale(.96); }
+  .stopbtn { background:#2c2640; color:#EDEAF6; border:none; cursor:pointer; padding:9px 14px;
+             border-radius:10px; font-size:14px; }
+  .note { font-size:12px; color:#9A93B8; line-height:1.6; margin-top:14px; }
+  .note b { color:#E0B84A; }
+  .empty { color:#E07A6A; font-size:14px; padding:10px; }
+  .presets { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .preset { background:#221c33; color:#EDEAF6; border:1px solid #382e52; cursor:pointer;
+            padding:8px 14px; border-radius:20px; font-size:13px; }
+  .preset.on { background:linear-gradient(90deg,#7B5CF0,#B06AB3); border-color:transparent; }
+</style>
+</head>
+<body>
+  <h1><span>Nexora Ascend</span> · Voice Tester</h1>
+  <div class="sub">Pick Nexa's voice (the AI interviewer). Press ▶ Play on any voice to hear it, then tell me which one you like.</div>
+
+  <div class="panel">
+    <label>Sample line (you can edit it)</label>
+    <textarea id="txt">Good morning, Tejas. I'm Nexa, your interviewer today. Relax and take your time — whenever you're ready, tell me a little about yourself.</textarea>
+    <div class="presets">
+      <button class="preset on" data-r="0.95" data-p="1.2">🌸 Cute / Soft</button>
+      <button class="preset" data-r="1.0" data-p="1.0">💬 Natural</button>
+      <button class="preset" data-r="0.95" data-p="0.9">💼 Professional</button>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Speed <span class="val" id="rv">0.95</span></label><input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="0.95"></div>
+      <div class="fld"><label>Pitch <span class="val" id="pv">1.20</span></label><input type="range" id="pitch" min="0.6" max="1.6" step="0.05" value="1.2"></div>
+      <label class="toggle"><input type="checkbox" id="mamOnly" checked> Show female voices only</label>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="note">
+    <b>For the most natural "ma'am" voice:</b> open this file in <b>Microsoft Edge</b> (double-click → Open with → Edge).
+    Edge includes a very realistic Indian voice like "Microsoft Neerja Online (Natural)" — free.
+    If the list is empty or Play doesn't work here, open it in Edge/Chrome (the in-app preview sometimes blocks audio).
+    This page is only for picking a voice — the final app will show a clean, English-only voice option.
+  </div>
+
+<script>
+  const listEl = document.getElementById('list');
+  const rate = document.getElementById('rate'), pitch = document.getElementById('pitch');
+  const rv = document.getElementById('rv'), pv = document.getElementById('pv');
+  const mamOnly = document.getElementById('mamOnly'), txt = document.getElementById('txt');
+  rate.oninput = () => rv.textContent = (+rate.value).toFixed(2);
+  pitch.oninput = () => pv.textContent = (+pitch.value).toFixed(2);
+  document.querySelectorAll('.preset').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.preset').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    rate.value = b.dataset.r; pitch.value = b.dataset.p;
+    rv.textContent = (+rate.value).toFixed(2); pv.textContent = (+pitch.value).toFixed(2);
+  });
+
+  const FEM = /female|zira|heera|hazel|susan|priya|neerja|aria|jenny|ananya|kavya|swara|catherine|linda|eva|natasha|clara|sonia|libby|maisie|mam/i;
+  const MALE = /\bmale\b|david|mark|ravi|prabhat|george|guy|ryan|thomas|william|brian|christopher|eric|roger/i;
+
+  function isFemale(v){ if (MALE.test(v.name)) return false; return FEM.test(v.name) || /online|natural/i.test(v.name); }
+
+  function speak(voice){
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt.value);
+    u.voice = voice; u.rate = +rate.value; u.pitch = +pitch.value;
+    speechSynthesis.speak(u);
+  }
+  function stopAll(){ speechSynthesis.cancel(); }
+
+  function render(){
+    let voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    if (mamOnly.checked) voices = voices.filter(isFemale);
+    // Indian English pehle, phir online/natural, phir baaki
+    voices.sort((a,b)=>{
+      const s = v => (/en-IN/i.test(v.lang)?0:2) + (/online|natural/i.test(v.name)?0:1);
+      return s(a)-s(b);
+    });
+    listEl.innerHTML = '';
+    if (!voices.length){ listEl.innerHTML = '<div class="empty">No voices found. Open this file in Microsoft Edge or Chrome.</div>'; return; }
+    voices.forEach(v => {
+      const nat = /online|natural/i.test(v.name);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<div class="info"><div class="nm">'+v.name+
+          (isFemale(v)?'<span class="tag mam">female</span>':'')+
+          (nat?'<span class="tag nat">natural</span>':'')+
+        '</div><div class="lg">'+v.lang+'</div></div>'+
+        '<button class="play">▶ Play</button>';
+      card.querySelector('.play').onclick = () => speak(v);
+      listEl.appendChild(card);
+    });
+    const stop = document.createElement('button');
+    stop.className = 'stopbtn'; stop.textContent = '⏹ Stop'; stop.onclick = stopAll;
+    listEl.appendChild(stop);
+  }
+
+  mamOnly.onchange = render;
+  speechSynthesis.onvoiceschanged = render;
+  render();
+  setTimeout(render, 400);
+</script>
+</body>
+</html>

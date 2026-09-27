@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'api_service.dart';
+import 'app_background.dart';
 import 'cover_letter_screen.dart';
 
 class MatchDetailScreen extends StatefulWidget {
@@ -64,14 +65,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D14), Color(0xFF1A1530), Color(0xFF0D0D14)],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: isLoading
               ? const Center(

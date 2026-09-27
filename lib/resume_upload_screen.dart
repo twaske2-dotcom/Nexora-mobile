@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'api_service.dart';
+import 'app_background.dart';
 import 'resume_builder_screen.dart';
 import 'cover_letter_screen.dart';
 import 'resume_analysis_screen.dart';
@@ -16,18 +17,15 @@ class ResumeUploadScreen extends StatefulWidget {
 
 class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
   PlatformFile? selectedFile;
-
   bool isUploading = false;
-  String? previewText;
 
-  int? qualityScore;
-  List<dynamic> qualityTips = [];
+  // Concept: after a successful upload we only show the "what next" tiles.
+  // Preview / skills / quality / AI feedback ab yaha inline nahi dikhte —
+  // wo apne-apne feature screen mein click karne pe khulte hain.
+  bool uploaded = false;
 
-  Map<String, dynamic>? extracted;
-
-  bool isFetchingFeedback = false;
-  List<String>? aiFeedback;
-  String? aiFeedbackError;
+  // Kept only to prefill the resume builder — never shown on this screen.
+  Map<String, dynamic>? _extracted;
 
   Future<void> pickFile() async {
     try {
@@ -36,40 +34,23 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
         allowedExtensions: ['pdf', 'docx'],
       );
 
-      if (result.isEmpty || !mounted) {
-        return;
-      }
+      if (result.isEmpty || !mounted) return;
 
       final file = result.first;
 
       if (file.path == null || file.path!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not access the selected file.'),
-            backgroundColor: Color(0xFFB3382C),
-          ),
-        );
+        _snack('Could not access the selected file.', const Color(0xFFB3382C));
         return;
       }
 
       setState(() {
         selectedFile = file;
-        previewText = null;
-        qualityScore = null;
-        qualityTips = [];
-        extracted = null;
-        aiFeedback = null;
-        aiFeedbackError = null;
+        uploaded = false;
+        _extracted = null;
       });
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not select the file. Please try again.'),
-          backgroundColor: Color(0xFFB3382C),
-        ),
-      );
+      _snack('Could not select the file. Please try again.', const Color(0xFFB3382C));
     }
   }
 
@@ -81,11 +62,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
       return;
     }
 
-    setState(() {
-      isUploading = true;
-      aiFeedback = null;
-      aiFeedbackError = null;
-    });
+    setState(() => isUploading = true);
 
     final file = selectedFile!;
 
@@ -98,115 +75,32 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        isUploading = false;
-      });
-
       if (result != null) {
-        final dynamic quality = result['quality'];
         final dynamic extractedData = result['extracted'];
-
-        int? score;
-
-        if (quality is Map && quality['score'] != null) {
-          final dynamic rawScore = quality['score'];
-
-          if (rawScore is int) {
-            score = rawScore;
-          } else {
-            score = int.tryParse(rawScore.toString());
-          }
-        }
-
-        List<dynamic> tips = [];
-
-        if (quality is Map && quality['tips'] is List) {
-          tips = List<dynamic>.from(quality['tips']);
-        }
-
-        Map<String, dynamic>? extractedMap;
-
-        if (extractedData is Map) {
-          extractedMap = Map<String, dynamic>.from(extractedData);
-        }
-
         setState(() {
-          previewText = result['preview']?.toString();
-          qualityScore = score;
-          qualityTips = tips;
-          extracted = extractedMap;
-          aiFeedback = null;
-          aiFeedbackError = null;
+          isUploading = false;
+          uploaded = true;
+          _extracted = extractedData is Map
+              ? Map<String, dynamic>.from(extractedData)
+              : null;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Resume uploaded successfully!'),
-            backgroundColor: Color(0xFF3E9C63),
-          ),
-        );
+        _snack('Resume uploaded successfully!', const Color(0xFF3E9C63));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Upload failed. Try again.'),
-            backgroundColor: Color(0xFFB3382C),
-          ),
-        );
+        setState(() => isUploading = false);
+        _snack('Upload failed. Try again.', const Color(0xFFB3382C));
       }
     } catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        isUploading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Upload failed. Check your connection and try again.'),
-          backgroundColor: Color(0xFFB3382C),
-        ),
-      );
+      setState(() => isUploading = false);
+      _snack('Upload failed. Check your connection and try again.',
+          const Color(0xFFB3382C));
     }
   }
 
-  Future<void> fetchFeedback() async {
-    if (isFetchingFeedback) {
-      return;
-    }
-
-    setState(() {
-      isFetchingFeedback = true;
-      aiFeedbackError = null;
-    });
-
-    try {
-      final tips = await ApiService.getResumeFeedback(widget.token);
-
-      if (!mounted) return;
-
-      if (tips.isEmpty) {
-        setState(() {
-          isFetchingFeedback = false;
-          aiFeedback = null;
-          aiFeedbackError = 'AI feedback could not be generated right now.';
-        });
-        return;
-      }
-
-      setState(() {
-        isFetchingFeedback = false;
-        aiFeedback = tips;
-        aiFeedbackError = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        isFetchingFeedback = false;
-        aiFeedback = null;
-        aiFeedbackError = 'Could not get AI feedback. Please try again.';
-      });
-    }
+  void _snack(String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
   }
 
   void openResumeBuilder() {
@@ -214,7 +108,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            ResumeBuilderScreen(token: widget.token, prefill: extracted),
+            ResumeBuilderScreen(token: widget.token, prefill: _extracted),
       ),
     );
   }
@@ -244,22 +138,10 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A1530),
         elevation: 0,
-        title: const Text(
-          'Upload Resume',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Upload Resume', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D14), Color(0xFF1A1530), Color(0xFF0D0D14)],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -267,7 +149,6 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 10),
-
                 GestureDetector(
                   onTap: isUploading ? null : pickFile,
                   child: Container(
@@ -291,11 +172,8 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                               colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
                             ),
                           ),
-                          child: const Icon(
-                            Icons.upload_file_rounded,
-                            color: Colors.white,
-                            size: 30,
-                          ),
+                          child: const Icon(Icons.upload_file_rounded,
+                              color: Colors.white, size: 30),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -310,13 +188,8 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          'PDF or DOCX',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12.5,
-                          ),
-                        ),
+                        const Text('PDF or DOCX',
+                            style: TextStyle(color: Colors.white38, fontSize: 12.5)),
                       ],
                     ),
                   ),
@@ -327,9 +200,8 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: (selectedFile == null || isUploading)
-                        ? null
-                        : uploadFile,
+                    onPressed:
+                        (selectedFile == null || isUploading) ? null : uploadFile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -358,13 +230,11 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                                 height: 22,
                                 width: 22,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2.2,
-                                  color: Colors.white,
-                                ),
+                                    strokeWidth: 2.2, color: Colors.white),
                               )
-                            : const Text(
-                                'Upload Resume',
-                                style: TextStyle(
+                            : Text(
+                                uploaded ? 'Upload a different resume' : 'Upload Resume',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -375,551 +245,53 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                   ),
                 ),
 
-                if (previewText != null) ...[
+                // Concept: post-upload, only a confirmation + tiles that OPEN
+                // the real detail inside each feature — nothing dumped inline.
+                if (uploaded) ...[
                   const SizedBox(height: 28),
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: const Color(0xFF6FDB9A).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
+                          color: const Color(0xFF6FDB9A).withValues(alpha: 0.3)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        const Text(
-                          'Extracted preview',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          previewText!,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13.5,
-                            height: 1.5,
+                        const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF6FDB9A), size: 22),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Resume saved. Open a tool below to see the details.',
+                            style: TextStyle(color: Colors.white, fontSize: 13.5),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-
-                if (extracted != null &&
-                    (extracted!['skills'] ?? '').toString().isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Detected skills',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: extracted!['skills']
-                        .toString()
-                        .split(RegExp(r'[,•|]'))
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty && s.length < 30)
-                        .map(
-                          (skill) => Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF7B5CF0,
-                              ).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              skill,
-                              style: const TextStyle(
-                                color: Color(0xFFB9A8F5),
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-
-                if (qualityScore != null) ...[
-                  const SizedBox(height: 28),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'Resume Quality',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '$qualityScore/100',
-                              style: TextStyle(
-                                color: _scoreColor(qualityScore!),
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: (qualityScore! / 100).clamp(0.0, 1.0),
-                            minHeight: 8,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.08,
-                            ),
-                            color: _scoreColor(qualityScore!),
-                          ),
-                        ),
-
-                        if (qualityTips.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          ...qualityTips.map(
-                            (tip) => Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.circle,
-                                    size: 5,
-                                    color: Colors.white38,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      tip.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        if (qualityScore! < 80) ...[
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              onPressed: openResumeBuilder,
-                              style: TextButton.styleFrom(
-                                backgroundColor: const Color(
-                                  0xFF7B5CF0,
-                                ).withValues(alpha: 0.15),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Build a professional resume instead',
-                                style: TextStyle(
-                                  color: Color(0xFFB06AB3),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-
-                if (previewText != null) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF7B5CF0).withValues(alpha: 0.18),
-                          const Color(0xFFB06AB3).withValues(alpha: 0.12),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF7B5CF0).withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.auto_awesome,
-                              color: Color(0xFFB06AB3),
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'AI Resume Feedback',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Get specific, AI-written suggestions to improve your resume',
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        const SizedBox(height: 14),
-
-                        if (isFetchingFeedback)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.04),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Generating feedback...',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else if (aiFeedbackError != null)
-                          Column(
-                            children: [
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFB3382C,
-                                  ).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(
-                                      0xFFB3382C,
-                                    ).withValues(alpha: 0.25),
-                                  ),
-                                ),
-                                child: Text(
-                                  aiFeedbackError!,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 44,
-                                child: ElevatedButton(
-                                  onPressed: fetchFeedback,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    padding: EdgeInsets.zero,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF7B5CF0),
-                                          Color(0xFFB06AB3),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        'Retry AI Feedback',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        else if (aiFeedback == null)
-                          SizedBox(
-                            width: double.infinity,
-                            height: 44,
-                            child: ElevatedButton(
-                              onPressed: fetchFeedback,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF7B5CF0),
-                                      Color(0xFFB06AB3),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Container(
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    '✨ Get AI Feedback',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ...aiFeedback!
-                                  .map(
-                                    (tip) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 10,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            '✨ ',
-                                            style: TextStyle(fontSize: 13),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              tip,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              const SizedBox(height: 4),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 40,
-                                child: OutlinedButton(
-                                  onPressed: fetchFeedback,
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                      color: const Color(
-                                        0xFFB06AB3,
-                                      ).withValues(alpha: 0.45),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Regenerate Feedback',
-                                    style: TextStyle(
-                                      color: Color(0xFFB9A8F5),
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                // -------------------------------------------------
-                // FULL RESUME ANALYSIS
-                // -------------------------------------------------
-                if (previewText != null) ...[
-                  const SizedBox(height: 16),
-                  GestureDetector(
+                  const SizedBox(height: 18),
+                  _featureTile(
+                    icon: Icons.insights_rounded,
+                    title: 'Resume Analysis',
+                    subtitle: 'Score, ATS check and fixes',
                     onTap: openResumeAnalysis,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF7B5CF0).withValues(alpha: 0.18),
-                            const Color(0xFFB06AB3).withValues(alpha: 0.12),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFF7B5CF0).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(
-                                0xFF7B5CF0,
-                              ).withValues(alpha: 0.2),
-                            ),
-                            child: const Icon(
-                              Icons.insights_rounded,
-                              color: Color(0xFFB06AB3),
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'View Full Analysis',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.white38,
-                          ),
-                        ],
-                      ),
-                    ),
+                    highlight: true,
                   ),
-                ],
-
-                // -------------------------------------------------
-                // COVER LETTER
-                // -------------------------------------------------
-                if (previewText != null) ...[
-                  const SizedBox(height: 16),
-                  GestureDetector(
+                  const SizedBox(height: 12),
+                  _featureTile(
+                    icon: Icons.mail_outline_rounded,
+                    title: 'Cover Letter',
+                    subtitle: 'Generate one from your resume',
                     onTap: openCoverLetter,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(
-                                0xFF7B5CF0,
-                              ).withValues(alpha: 0.15),
-                            ),
-                            child: const Icon(
-                              Icons.mail_outline_rounded,
-                              color: Color(0xFFB06AB3),
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Generate a Cover Letter',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.white38,
-                          ),
-                        ],
-                      ),
-                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _featureTile(
+                    icon: Icons.edit_document,
+                    title: 'Resume Builder',
+                    subtitle: 'Build or improve a resume',
+                    onTap: openResumeBuilder,
                   ),
                 ],
 
@@ -932,15 +304,64 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
     );
   }
 
-  Color _scoreColor(int score) {
-    if (score >= 80) {
-      return const Color(0xFF6FDB9A);
-    }
-
-    if (score >= 50) {
-      return const Color(0xFFE0B84A);
-    }
-
-    return const Color(0xFFE07A6A);
+  Widget _featureTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool highlight = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: highlight
+              ? LinearGradient(colors: [
+                  const Color(0xFF7B5CF0).withValues(alpha: 0.18),
+                  const Color(0xFFB06AB3).withValues(alpha: 0.12),
+                ])
+              : null,
+          color: highlight ? null : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: highlight
+                ? const Color(0xFF7B5CF0).withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF7B5CF0).withValues(alpha: 0.18),
+              ),
+              child: Icon(icon, color: const Color(0xFFB06AB3), size: 19),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+          ],
+        ),
+      ),
+    );
   }
 }
