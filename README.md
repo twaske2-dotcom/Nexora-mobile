@@ -779,6 +779,7 @@ Do not commit API keys, passwords, or JWT secrets to GitHub.
 
 ---
 
+
 ## 16. Output Screenshots
 
 ### Nexora Resume App Screenshots
