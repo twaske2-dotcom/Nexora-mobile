@@ -1,11 +1,11 @@
 # NEXORA RESUME APP
-## AI-Powered Resume and Career Preparation Application
+## AI-Powered Resume and Career Mentor Aplication
 
 ---
 
 ## 1. Project Overview
 
-Nexora Resume App is an AI-powered resume and career preparation application designed to help students and job seekers create professional resumes, analyze resume quality, discover job opportunities, match resumes with job descriptions, generate cover letters, and prepare for interviews using Artificial Intelligence.
+Nexora Resume App is an AI-powered resume and career Mentor application designed to help students and job seekers create professional resumes, analyze resume quality, discover job opportunities, match resumes with job descriptions, generate cover letters, and prepare for interviews using Artificial Intelligence.
 
 The project consists of two separate repositories:
 
