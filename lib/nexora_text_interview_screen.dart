@@ -110,9 +110,9 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Text Interview',
@@ -127,7 +127,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
   Widget _content() {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+        child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
       );
     }
     if (_error != null) {
@@ -147,9 +147,9 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
               ElevatedButton(
                 onPressed: _loadQuestions,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7B5CF0)),
+                    backgroundColor: const Color(0xFFE8BA48)),
                 child: const Text('Try again',
-                    style: TextStyle(color: Colors.white)),
+                    style: TextStyle(color: Color(0xFF1A1200))),
               ),
             ],
           ),
@@ -162,7 +162,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+            CircularProgressIndicator(color: Color(0xFFE8BA48)),
             SizedBox(height: 16),
             Text('Nexa is reviewing your answers…',
                 style: TextStyle(color: Colors.white70, fontSize: 14)),
@@ -183,7 +183,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
             children: [
               Text('$_role  •  Question ${_index + 1} of $total',
                   style: const TextStyle(
-                      color: Color(0xFFB79CFF),
+                      color: Color(0xFFF4D67A),
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
             ],
@@ -194,9 +194,9 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: const Color(0xFF2A2244),
+              backgroundColor: const Color(0xFF3A2F17),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF7B5CF0)),
+                  const AlwaysStoppedAnimation<Color>(Color(0xFFE8BA48)),
             ),
           ),
           const SizedBox(height: 22),
@@ -206,7 +206,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2A2244)),
+              border: Border.all(color: const Color(0xFF3A2F17)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,10 +217,10 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                        colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)]),
+                        colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)]),
                   ),
                   child: const Icon(Icons.auto_awesome,
-                      color: Colors.white, size: 18),
+                      color: Color(0xFF1A1200), size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -254,7 +254,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF7B5CF0)),
+                  borderSide: const BorderSide(color: Color(0xFFE8BA48)),
                 ),
               ),
             ),
@@ -266,7 +266,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
             child: ElevatedButton(
               onPressed: _next,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B5CF0),
+                backgroundColor: const Color(0xFFE8BA48),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
@@ -275,7 +275,7 @@ class _NexoraTextInterviewScreenState extends State<NexoraTextInterviewScreen> {
                     ? 'Next question'
                     : 'Finish & get feedback',
                 style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF1A1200),
                     fontSize: 15,
                     fontWeight: FontWeight.w700),
               ),

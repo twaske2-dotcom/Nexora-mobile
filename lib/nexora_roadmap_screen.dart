@@ -59,9 +59,9 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('My Roadmap',
@@ -80,7 +80,7 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                      CircularProgressIndicator(color: Color(0xFFE8BA48)),
                       SizedBox(height: 16),
                       Text('Nexa is reading your resume…',
                           style: TextStyle(color: Colors.white54)),
@@ -101,7 +101,7 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
                             TextButton(
                                 onPressed: _load,
                                 child: const Text('Try again',
-                                    style: TextStyle(color: Color(0xFFB79CFF)))),
+                                    style: TextStyle(color: Color(0xFFF4D67A)))),
                           ],
                         ),
                       ),
@@ -126,7 +126,7 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                  colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)]),
+                  colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)]),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
@@ -134,17 +134,17 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
               children: [
                 Text('${data['role'] ?? 'Your Path'}',
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1A1200),
                         fontSize: 20,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text('${data['level'] ?? ''}',
-                    style: const TextStyle(color: Colors.white, fontSize: 13)),
+                    style: const TextStyle(color: Color(0xFF1A1200), fontSize: 13)),
                 if ((data['summary'] ?? '').toString().isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Text('${data['summary']}',
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.92),
+                          color: Color(0xEB1A1200),
                           fontSize: 13,
                           height: 1.4)),
                 ],
@@ -183,7 +183,7 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF2A2244)),
+        border: Border.all(color: const Color(0xFF3A2F17)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,10 +192,10 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
             children: [
               CircleAvatar(
                 radius: 15,
-                backgroundColor: const Color(0xFF7B5CF0),
+                backgroundColor: const Color(0xFFE8BA48),
                 child: Text('$index',
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1A1200),
                         fontWeight: FontWeight.w700,
                         fontSize: 13)),
               ),
@@ -225,12 +225,12 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7B5CF0).withValues(alpha: 0.16),
+                          color: const Color(0xFFE8BA48).withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(s,
                             style: const TextStyle(
-                                color: Color(0xFFB79CFF), fontSize: 12)),
+                                color: Color(0xFFF4D67A), fontSize: 12)),
                       ))
                   .toList(),
             ),
@@ -276,7 +276,7 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF2A2244)),
+          border: Border.all(color: const Color(0xFF3A2F17)),
         ),
         child: Row(
           children: [
@@ -299,12 +299,12 @@ class _NexoraRoadmapScreenState extends State<NexoraRoadmapScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFB06AB3).withValues(alpha: 0.18),
+                            color: const Color(0xFFC48A0A).withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text('${r['type']}',
                               style: const TextStyle(
-                                  color: Color(0xFFE0A9E0), fontSize: 10)),
+                                  color: Color(0xFFF4D67A), fontSize: 10)),
                         ),
                       ],
                     ],

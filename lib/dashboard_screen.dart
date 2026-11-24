@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -15,8 +16,8 @@ import 'progress_screen.dart';
 import 'help_screen.dart';
 import 'nexora_logo.dart';
 import 'login_screen.dart';
-import 'match_detail_screen.dart';
 import 'nexora_ascend_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String token;
@@ -28,50 +29,71 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  static const _cacheKey = 'dash_top_jobs_v1';
+
   List<dynamic> jobs = [];
 
   bool isLoading = true;
 
-  Map<String, dynamic> matchScores = {};
-
   @override
   void initState() {
     super.initState();
-    loadData();
+    _showCached(); // instant: last known matches appear immediately
+    loadData(); // then refresh live in the background
   }
 
-  // Dashboard sirf grid + job feed dikhata hai. Resume score / applied /
-  // matches ab "My Progress" feature ke andar khulte hain, yaha inline nahi.
+  Future<void> _showCached() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey);
+      if (raw == null || !mounted || jobs.isNotEmpty) return;
+      final data = jsonDecode(raw);
+      if (data is List && data.isNotEmpty) {
+        setState(() {
+          jobs = data;
+          isLoading = false;
+        });
+      }
+    } catch (_) {}
+  }
+
+  // Live top matches from the job provider, personalised from the resume
+  // (backend builds the search from the resume's skills when `what` is empty).
   Future<void> loadData() async {
-    List<dynamic> jobResult = [];
-    Map<String, dynamic> scores = {};
-
     try {
-      jobResult = await ApiService.getJobs(widget.token);
+      final result = await ApiService.searchExternalJobs(
+        widget.token,
+        what: '',
+      );
+      final list = List<dynamic>.from(result);
+      int pct(dynamic j) =>
+          (j is Map && j['matchPercent'] is num)
+              ? (j['matchPercent'] as num).round()
+              : -1;
+      list.sort((a, b) => pct(b).compareTo(pct(a)));
+      final top = list.take(4).toList();
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_cacheKey, jsonEncode(top));
+      } catch (_) {}
+
+      if (!mounted) return;
+      setState(() {
+        jobs = top;
+        isLoading = false;
+      });
     } catch (_) {
-      jobResult = [];
+      if (!mounted) return;
+      setState(() => isLoading = false); // keep cached list if any
     }
-
-    try {
-      scores = await ApiService.getMatchScores(widget.token);
-    } catch (_) {
-      scores = {};
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      jobs = jobResult;
-      matchScores = scores;
-      isLoading = false;
-    });
   }
 
   Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF15102A),
+        backgroundColor: const Color(0xFF14100A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -96,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Text(
               'Yes, log out',
               style: TextStyle(
-                color: Color(0xFFB06AB3),
+                color: Color(0xFFC48A0A),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -136,34 +158,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return const Color(0xFFE07A6A);
   }
 
-  int? _scoreForJob(dynamic job) {
-    if (job is! Map) {
-      return null;
-    }
-
-    final jobId = job['jobId'];
-
-    if (jobId == null) {
-      return null;
-    }
-
-    final value = matchScores[jobId.toString()];
-
-    if (value is num) {
-      return value.round().clamp(0, 100);
-    }
-
-    if (value is String) {
-      final parsed = num.tryParse(value);
-
-      if (parsed != null) {
-        return parsed.round().clamp(0, 100);
-      }
-    }
-
-    return null;
-  }
-
   void _open(Widget screen) {
     Navigator.push(
       context,
@@ -174,12 +168,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       body: AppBackground(
         child: SafeArea(
           child: RefreshIndicator(
-            color: const Color(0xFF7B5CF0),
-            backgroundColor: const Color(0xFF1A1530),
+            color: const Color(0xFFE8BA48),
+            backgroundColor: const Color(0xFF17130C),
             onRefresh: loadData,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -193,7 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildHeader(),
                         const SizedBox(height: 24),
                         const Text(
-                          "Let's get you\nhired, Tejas.",
+                          "Let's get you\nhired.",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -209,14 +203,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 14),
                         _buildToolsGrid(),
                         const SizedBox(height: 28),
-                        _sectionDivider('For you'),
+                        _sectionDivider('Top matches for you'),
                         const SizedBox(height: 14),
-                        _buildTipCard(),
-                        const SizedBox(height: 8),
-                        if (!isLoading && jobs.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          _sectionDivider('Top job matches'),
-                        ],
                       ],
                     ),
                   ),
@@ -239,8 +227,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           height: 42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF151022),
-            border: Border.all(color: const Color(0xFF2A2244)),
+            color: const Color(0xFF17130C),
+            border: Border.all(color: const Color(0xFF3A2F17)),
           ),
           child: CustomPaint(painter: NexoraLogoPainter()),
         ),
@@ -273,11 +261,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7B5CF0).withValues(alpha: 0.35),
+                  color: const Color(0xFFE8BA48).withValues(alpha: 0.35),
                   blurRadius: 16,
                 ),
               ],
@@ -285,14 +273,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const _AnimatedFeatureIcon(
               icon: Icons.auto_awesome,
               anim: IconAnim.twinkle,
-              color: Colors.white,
+              color: Color(0xFF1A1200),
               size: 19,
             ),
           ),
         ),
         const SizedBox(width: 10),
         GestureDetector(
-          onTap: _confirmLogout,
+          onTap: () => _open(SettingsScreen(onLogout: _confirmLogout)),
           child: Container(
             width: 42,
             height: 42,
@@ -302,8 +290,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: const Icon(
-              Icons.logout_rounded,
-              color: Colors.white70,
+              Icons.settings_outlined,
+              color: Color(0xFFF4D67A),
               size: 18,
             ),
           ),
@@ -323,12 +311,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+            colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7B5CF0).withValues(alpha: 0.35),
+              color: const Color(0xFFE8BA48).withValues(alpha: 0.35),
               blurRadius: 22,
               offset: const Offset(0, 10),
             ),
@@ -341,12 +329,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.18),
+                color: Color(0x2E1A1200),
               ),
               child: const _AnimatedFeatureIcon(
                 icon: Icons.insights_rounded,
                 anim: IconAnim.twinkle,
-                color: Colors.white,
+                color: Color(0xFF1A1200),
                 size: 22,
               ),
             ),
@@ -358,7 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     'My Progress',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF1A1200),
                       fontSize: 16.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -366,12 +354,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   SizedBox(height: 3),
                   Text(
                     'Resume score, applications & job matches',
-                    style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                    style: TextStyle(color: Color(0xB31A1200), fontSize: 12.5),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.arrow_forward_rounded, color: Color(0xFF1A1200), size: 20),
           ],
         ),
       ),
@@ -430,226 +418,119 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTipCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0x3D7B5CF0), Color(0x1AB06AB3)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x4D7B5CF0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              _AnimatedFeatureIcon(
-                icon: Icons.tips_and_updates_outlined,
-                anim: IconAnim.twinkle,
-                color: Color(0xFFB06AB3),
-                size: 15,
+  Widget _buildJobList() {
+    if (isLoading && jobs.isEmpty) {
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => Padding(
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(18),
               ),
-              SizedBox(width: 7),
-              Text(
-                'TIP OF THE DAY',
-                style: TextStyle(
-                  color: Color(0xFFB06AB3),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add measurable results (like "boosted sales by 20%"). '
-            'Recruiters scan for numbers first.',
-            style: TextStyle(
-              color: Color(0xFFE7E2F5),
-              fontSize: 12.5,
-              height: 1.5,
             ),
           ),
-        ],
-      ),
-    );
-  }
+          childCount: 3,
+        ),
+      );
+    }
 
-  Widget _buildJobList() {
-    if (isLoading || jobs.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (jobs.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+          child: GestureDetector(
+            onTap: () => _open(ExternalJobsScreen(token: widget.token)),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF3A2F17)),
+              ),
+              child: const Text(
+                'Upload your resume to see live job matches here.',
+                style: TextStyle(color: Colors.white60, fontSize: 13),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final rawJob = jobs[index];
+        if (rawJob is! Map) return const SizedBox.shrink();
 
-        if (rawJob is! Map) {
-          return const SizedBox.shrink();
-        }
-
-        final job = Map<String, dynamic>.from(rawJob);
-        final status = (job['status'] ?? '').toString();
-        final isOpen = status.toUpperCase() == 'OPEN';
-        final score = _scoreForJob(job);
+        final title = (rawJob['title'] ?? '').toString();
+        final company = (rawJob['company'] ?? '').toString();
+        final location = (rawJob['location'] ?? '').toString();
+        final pct = rawJob['matchPercent'];
+        final score = pct is num ? pct.round().clamp(0, 100) : null;
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
           child: GestureDetector(
-            onTap: () {
-              final jobId = job['jobId'];
-              if (jobId == null) return;
-              _open(
-                MatchDetailScreen(
-                  token: widget.token,
-                  jobId: jobId,
-                  jobTitle: job['title'] ?? 'Job',
-                ),
-              );
-            },
+            onTap: () => _open(ExternalJobsScreen(token: widget.token)),
             child: Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.045),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.work_outline_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              (job['title'] ?? '').toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${job['location'] ?? ''} · ${job['experienceRequired'] ?? 0} yrs exp',
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isOpen
-                                      ? const Color(0xFF3E9C63)
-                                      : const Color(0xFF8A8A8A))
-                                  .withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          status,
-                          style: TextStyle(
-                            color: isOpen
-                                ? const Color(0xFF6FDB9A)
-                                : Colors.white54,
-                            fontSize: 11,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  if (score != null) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _matchColor(score).withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.bolt,
-                                size: 12,
-                                color: _matchColor(score),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '$score% match',
-                                style: TextStyle(
-                                  color: _matchColor(score),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 4),
+                        Text(
+                          [company, location]
+                              .where((e) => e.isNotEmpty)
+                              .join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                  if ((job['requiredSkills'] ?? '')
-                      .toString()
-                      .isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                  ),
+                  if (score != null) ...[
+                    const SizedBox(width: 12),
                     Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      job['requiredSkills'].toString(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12.5,
-                        height: 1.4,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _matchColor(score).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$score%',
+                        style: TextStyle(
+                          color: _matchColor(score),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -712,15 +593,15 @@ class _ToolTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF7B5CF0).withValues(alpha: 0.9),
-                    const Color(0xFFB06AB3).withValues(alpha: 0.9),
+                    const Color(0xFFE8BA48).withValues(alpha: 0.9),
+                    const Color(0xFFC48A0A).withValues(alpha: 0.9),
                   ],
                 ),
               ),
               child: _AnimatedFeatureIcon(
                 icon: tool.icon,
                 anim: tool.anim,
-                color: Colors.white,
+                color: Color(0xFF1A1200),
                 size: 19,
               ),
             ),
@@ -790,29 +671,34 @@ class _AnimatedFeatureIconState extends State<_AnimatedFeatureIcon>
   Widget build(BuildContext context) {
     final icon = Icon(widget.icon, color: widget.color, size: widget.size);
 
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) {
-        final t = _c.value; // 0 -> 1
-        switch (widget.anim) {
-          case IconAnim.spin:
-            return Transform.rotate(angle: t * 2 * math.pi, child: child);
-          case IconAnim.bob:
-            final dy = math.sin(t * 2 * math.pi * 3) * 3.0;
-            return Transform.translate(offset: Offset(0, dy), child: child);
-          case IconAnim.sway:
-            final angle = math.sin(t * 2 * math.pi * 2) * 0.22;
-            return Transform.rotate(angle: angle, child: child);
-          case IconAnim.twinkle:
-            final phase = 0.5 - 0.5 * math.cos(t * 2 * math.pi * 2.2);
-            final scale = 1 + 0.18 * phase;
-            return Transform.rotate(
-              angle: 0.18 * phase,
-              child: Transform.scale(scale: scale, child: child),
-            );
-        }
-      },
-      child: icon,
+    // RepaintBoundary: each icon repaints on its own layer, so the animation
+    // never forces the whole dashboard to redraw. Tickers also pause
+    // automatically while another screen is open on top (TickerMode).
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, child) {
+          final t = _c.value; // 0 -> 1
+          switch (widget.anim) {
+            case IconAnim.spin:
+              return Transform.rotate(angle: t * 2 * math.pi, child: child);
+            case IconAnim.bob:
+              final dy = math.sin(t * 2 * math.pi * 3) * 3.0;
+              return Transform.translate(offset: Offset(0, dy), child: child);
+            case IconAnim.sway:
+              final angle = math.sin(t * 2 * math.pi * 2) * 0.22;
+              return Transform.rotate(angle: angle, child: child);
+            case IconAnim.twinkle:
+              final phase = 0.5 - 0.5 * math.cos(t * 2 * math.pi * 2.2);
+              final scale = 1 + 0.18 * phase;
+              return Transform.rotate(
+                angle: 0.18 * phase,
+                child: Transform.scale(scale: scale, child: child),
+              );
+          }
+        },
+        child: icon,
+      ),
     );
   }
 }

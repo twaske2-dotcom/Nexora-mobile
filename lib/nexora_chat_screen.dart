@@ -69,9 +69,9 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Learn with Nexa',
@@ -115,7 +115,7 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
         decoration: BoxDecoration(
           gradient: isUser
               ? const LinearGradient(
-                  colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)])
+                  colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)])
               : null,
           color: isUser ? null : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.only(
@@ -126,12 +126,12 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
           ),
           border: isUser
               ? null
-              : Border.all(color: const Color(0xFF2A2244)),
+              : Border.all(color: const Color(0xFF3A2F17)),
         ),
         child: Text(
           m.text,
           style: TextStyle(
-            color: muted ? Colors.white54 : Colors.white,
+            color: muted ? Colors.white54 : (isUser ? const Color(0xFF1A1200) : Colors.white),
             fontSize: 13.5,
             height: 1.4,
             fontStyle: muted ? FontStyle.italic : FontStyle.normal,
@@ -145,8 +145,8 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF15102A),
-        border: Border(top: BorderSide(color: Color(0xFF2A2244))),
+        color: Color(0xFF14100A),
+        border: Border(top: BorderSide(color: Color(0xFF3A2F17))),
       ),
       child: Row(
         children: [
@@ -171,7 +171,7 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF7B5CF0)),
+                  borderSide: const BorderSide(color: Color(0xFFE8BA48)),
                 ),
               ),
             ),
@@ -185,16 +185,16 @@ class _NexoraChatScreenState extends State<NexoraChatScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                    colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)]),
+                    colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)]),
               ),
               child: _sending
                   ? const Padding(
                       padding: EdgeInsets.all(13),
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.2, color: Colors.white),
+                          strokeWidth: 2.2, color: Color(0xFF1A1200)),
                     )
                   : const Icon(Icons.send_rounded,
-                      color: Colors.white, size: 20),
+                      color: Color(0xFF1A1200), size: 20),
             ),
           ),
         ],

@@ -41,7 +41,11 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
   @override
   void initState() {
     super.initState();
-    search();
+    // search() uses FocusScope.of(context), which is not allowed inside
+    // initState. Run it after the first frame instead.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) search();
+    });
   }
 
   @override
@@ -53,7 +57,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
 
   Future<void> search() async {
     final query = _searchController.text.trim().isEmpty
-        ? 'software developer'
+        ? ''
         : _searchController.text.trim();
 
     final where = _whereController.text.trim();
@@ -278,7 +282,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF151520),
+      backgroundColor: const Color(0xFF14100A),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -412,7 +416,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                               children: [
                                 const Icon(
                                   Icons.bolt_rounded,
-                                  color: Color(0xFFB9A8F5),
+                                  color: Color(0xFFF4D67A),
                                   size: 19,
                                 ),
                                 const SizedBox(width: 7),
@@ -570,8 +574,8 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7B5CF0),
-                          foregroundColor: Colors.white,
+                          backgroundColor: const Color(0xFFE8BA48),
+                          foregroundColor: Color(0xFF1A1200),
                           disabledBackgroundColor: Colors.white10,
                           disabledForegroundColor: Colors.white30,
                           elevation: 0,
@@ -743,7 +747,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7B5CF0).withValues(alpha: 0.12),
+                    color: const Color(0xFFE8BA48).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -919,7 +923,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                     gradient: isLoading
                         ? null
                         : const LinearGradient(
-                            colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                            colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                           ),
                     color: isLoading ? Colors.white10 : null,
                     borderRadius: BorderRadius.circular(14),
@@ -933,7 +937,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                             color: Colors.white54,
                           ),
                         )
-                      : const Icon(Icons.search, color: Colors.white, size: 18),
+                      : const Icon(Icons.search, color: Color(0xFF1A1200), size: 18),
                 ),
               ),
             ],
@@ -998,12 +1002,12 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: selected
-                            ? const Color(0xFF7B5CF0).withValues(alpha: 0.25)
+                            ? const Color(0xFFE8BA48).withValues(alpha: 0.25)
                             : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: selected
-                              ? const Color(0xFF7B5CF0)
+                              ? const Color(0xFFE8BA48)
                               : Colors.white12,
                         ),
                       ),
@@ -1038,12 +1042,12 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
             Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: const Color(0xFF7B5CF0).withValues(alpha: 0.10),
+                color: const Color(0xFFE8BA48).withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.cloud_off_rounded,
-                color: Color(0xFFB9A8F5),
+                color: Color(0xFFF4D67A),
                 size: 30,
               ),
             ),
@@ -1130,7 +1134,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Reset Search'),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFB9A8F5),
+                foregroundColor: const Color(0xFFF4D67A),
               ),
             ),
           ],
@@ -1171,9 +1175,9 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14),
+        backgroundColor: const Color(0xFF0A0804),
         elevation: 0,
         title: const Text(
           'Explore Jobs',
@@ -1198,7 +1202,7 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
           Expanded(
             child: isLoading && jobs.isEmpty
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                    child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
                   )
                 : errorMessage != null && jobs.isEmpty
                 ? _errorView()
@@ -1206,8 +1210,8 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                 ? _emptyView()
                 : RefreshIndicator(
                     onRefresh: _refresh,
-                    color: const Color(0xFF7B5CF0),
-                    backgroundColor: const Color(0xFF171722),
+                    color: const Color(0xFFE8BA48),
+                    backgroundColor: const Color(0xFF17130C),
                     child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),

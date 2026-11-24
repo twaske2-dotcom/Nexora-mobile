@@ -43,9 +43,9 @@ class _AppBackgroundState extends State<AppBackground>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0D0D14),
-                Color(0xFF15102A),
-                Color(0xFF0D0D14),
+                Color(0xFF0A0804),
+                Color(0xFF14100A),
+                Color(0xFF0A0804),
               ],
             ),
           ),
@@ -60,21 +60,21 @@ class _AppBackgroundState extends State<AppBackground>
             return Stack(
               children: [
                 _glow(
-                  color: const Color(0xFF7B5CF0),
+                  color: const Color(0xFFE8BA48),
                   size: 360,
                   ax: -0.7 + 0.25 * math.sin(t),
                   ay: -0.8 + 0.15 * math.cos(t),
                   opacity: 0.40,
                 ),
                 _glow(
-                  color: const Color(0xFFB06AB3),
+                  color: const Color(0xFFC48A0A),
                   size: 320,
                   ax: 0.8 + 0.18 * math.cos(t * 0.8),
                   ay: -0.3 + 0.20 * math.sin(t * 0.8),
                   opacity: 0.32,
                 ),
                 _glow(
-                  color: const Color(0xFF5B3FD0),
+                  color: const Color(0xFF8A5F00),
                   size: 420,
                   ax: 0.1 + 0.20 * math.sin(t * 0.6 + 1),
                   ay: 0.9 + 0.12 * math.cos(t * 0.6 + 1),

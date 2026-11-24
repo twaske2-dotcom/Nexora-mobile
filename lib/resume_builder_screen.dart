@@ -128,9 +128,9 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: const Text(
           'Build Resume',
@@ -179,7 +179,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                   child: Ink(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                        colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -191,7 +191,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                               width: 22,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                color: Colors.white,
+                                color: Color(0xFF1A1200),
                               ),
                             )
                           : const Text(
@@ -199,7 +199,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: Color(0xFF1A1200),
                               ),
                             ),
                     ),
@@ -292,7 +292,7 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
 
   Widget _addButton(String label, VoidCallback onTap) => TextButton.icon(
     onPressed: onTap,
-    icon: const Icon(Icons.add, color: Color(0xFFB06AB3), size: 18),
-    label: Text(label, style: const TextStyle(color: Color(0xFFB06AB3))),
+    icon: const Icon(Icons.add, color: Color(0xFFC48A0A), size: 18),
+    label: Text(label, style: const TextStyle(color: Color(0xFFC48A0A))),
   );
 }

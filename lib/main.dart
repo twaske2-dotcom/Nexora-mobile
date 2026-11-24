@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
+import 'nexora_theme.dart';
 
 // Concept: entry point of every Flutter app
 void main() {
@@ -22,10 +23,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Resume App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: NexoraTheme.dark,
       // Concept: FutureBuilder - decides start screen based on saved login token
       home: const StartupScreen(),
     );

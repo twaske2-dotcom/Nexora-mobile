@@ -6,7 +6,7 @@ class NexoraLogoPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFF8B6FF5), Color(0xFFC77FC0)],
+        colors: [Color(0xFFF4D67A), Color(0xFFF4D67A)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.5

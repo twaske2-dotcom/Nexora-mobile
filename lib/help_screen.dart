@@ -65,9 +65,9 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: Row(
           children: [
@@ -77,12 +77,12 @@ class _HelpScreenState extends State<HelpScreen> {
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                  colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                 ),
               ),
               child: const Icon(
                 Icons.auto_awesome,
-                color: Colors.white,
+                color: Color(0xFF1A1200),
                 size: 18,
               ),
             ),
@@ -151,7 +151,7 @@ class _HelpScreenState extends State<HelpScreen> {
                     decoration: BoxDecoration(
                       gradient: msg.isUser
                           ? const LinearGradient(
-                              colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                              colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                             )
                           : null,
                       color: msg.isUser
@@ -161,8 +161,8 @@ class _HelpScreenState extends State<HelpScreen> {
                     ),
                     child: Text(
                       msg.text,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: msg.isUser ? const Color(0xFF1A1200) : Colors.white,
                         fontSize: 14.5,
                       ),
                     ),
@@ -174,7 +174,7 @@ class _HelpScreenState extends State<HelpScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1530),
+              color: const Color(0xFF17130C),
               border: Border(
                 top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
@@ -213,12 +213,12 @@ class _HelpScreenState extends State<HelpScreen> {
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                          colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                         ),
                       ),
                       child: const Icon(
                         Icons.send_rounded,
-                        color: Colors.white,
+                        color: Color(0xFF1A1200),
                         size: 20,
                       ),
                     ),

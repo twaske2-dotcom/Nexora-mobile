@@ -47,9 +47,9 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
     final qa = (feedback['qa'] is List) ? feedback['qa'] as List : const [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Your Interview Report',
@@ -106,13 +106,13 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-            colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)]),
+            colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)]),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _scoreRing(score, Colors.white, Colors.white24, big: true),
+          _scoreRing(score, Color(0xFF1A1200), Color(0x3D1A1200), big: true),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -120,14 +120,14 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
               children: [
                 const Text('Overall',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1A1200),
                         fontSize: 18,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
                 Text(
                   summary.isEmpty ? 'Great effort — keep practicing!' : summary,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 13.5, height: 1.4),
+                      color: Color(0xFF1A1200), fontSize: 13.5, height: 1.4),
                 ),
               ],
             ),
@@ -143,7 +143,7 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A2244)),
+        border: Border.all(color: const Color(0xFF3A2F17)),
       ),
       child: Row(
         children: [
@@ -164,9 +164,9 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.ios_share_rounded,
-                color: Color(0xFFB79CFF), size: 18),
+                color: Color(0xFFF4D67A), size: 18),
             label: const Text('Share',
-                style: TextStyle(color: Color(0xFFB79CFF))),
+                style: TextStyle(color: Color(0xFFF4D67A))),
           ),
         ],
       ),
@@ -184,14 +184,14 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2244)),
+        border: Border.all(color: const Color(0xFF3A2F17)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFFB79CFF), size: 20),
+              Icon(icon, color: const Color(0xFFF4D67A), size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(title,
@@ -226,7 +226,7 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2244)),
+        border: Border.all(color: const Color(0xFF3A2F17)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,14 +261,14 @@ class NexoraInterviewFeedbackScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: const Color(0xFF7B5CF0).withValues(alpha: 0.12),
+                color: const Color(0xFFE8BA48).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.tips_and_updates_rounded,
-                      color: Color(0xFFB79CFF), size: 16),
+                      color: Color(0xFFF4D67A), size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(fb,

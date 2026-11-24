@@ -74,7 +74,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
     final currentData = data;
 
     if (currentData == null) {
-      return const Color(0xFF7B5CF0);
+      return const Color(0xFFE8BA48);
     }
 
     final rawScore = currentData['score'];
@@ -146,9 +146,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF08070D),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF08070D),
+        backgroundColor: const Color(0xFF0A0804),
         elevation: 0,
         title: const Text(
           'Resume Analysis',
@@ -158,7 +158,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+              child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
             )
           : errorText != null
           ? Center(
@@ -194,8 +194,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
                           load();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7B5CF0),
-                          foregroundColor: Colors.white,
+                          backgroundColor: const Color(0xFFE8BA48),
+                          foregroundColor: Color(0xFF1A1200),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -211,8 +211,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
               ),
             )
           : RefreshIndicator(
-              color: const Color(0xFF7B5CF0),
-              backgroundColor: const Color(0xFF1A1530),
+              color: const Color(0xFFE8BA48),
+              backgroundColor: const Color(0xFF17130C),
               onRefresh: load,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -232,14 +232,14 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
                     const SizedBox(height: 22),
                     _AnimatedTapCard(
                       onTap: () {},
-                      color: const Color(0xFF7B5CF0),
+                      color: const Color(0xFFE8BA48),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 15),
                         child: Center(
                           child: Text(
                             'Rewrite with AI',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF1A1200),
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -264,12 +264,12 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFF7B5CF0).withValues(alpha: 0.16),
+          color: const Color(0xFFE8BA48).withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           fileName,
-          style: const TextStyle(color: Color(0xFFB9A8F5), fontSize: 10.5),
+          style: const TextStyle(color: Color(0xFFF4D67A), fontSize: 10.5),
         ),
       ),
     );

@@ -70,9 +70,9 @@ class _CoverLetterScreenState extends State<CoverLetterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: const Text('Cover Letter', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -110,18 +110,18 @@ class _CoverLetterScreenState extends State<CoverLetterScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF7B5CF0).withValues(alpha: 0.14),
-                        const Color(0xFFB06AB3).withValues(alpha: 0.08),
+                        const Color(0xFFE8BA48).withValues(alpha: 0.14),
+                        const Color(0xFFC48A0A).withValues(alpha: 0.08),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF7B5CF0).withValues(alpha: 0.28)),
+                    border: Border.all(color: const Color(0xFFE8BA48).withValues(alpha: 0.28)),
                   ),
                   child: isGenerating
                       ? const Center(
                           child: Padding(
                             padding: EdgeInsets.symmetric(vertical: 24),
-                            child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                            child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
                           ),
                         )
                       : Text(
@@ -169,7 +169,7 @@ class _CoverLetterScreenState extends State<CoverLetterScreen> {
             color: Colors.white.withValues(alpha: 0.06),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
-          child: Icon(icon, color: const Color(0xFFB06AB3), size: 16),
+          child: Icon(icon, color: const Color(0xFFC48A0A), size: 16),
         ),
       );
 
@@ -216,14 +216,14 @@ class _AnimatedPressButtonState extends State<_AnimatedPressButton> {
             gradient: LinearGradient(
               colors: widget.onPressed == null
                   ? [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.08)]
-                  : [const Color(0xFF7B5CF0), const Color(0xFFB06AB3)],
+                  : [const Color(0xFFE8BA48), const Color(0xFFC48A0A)],
             ),
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Text(
             widget.label,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.5),
+            style: TextStyle(color: widget.onPressed == null ? Colors.white38 : const Color(0xFF1A1200), fontWeight: FontWeight.w600, fontSize: 14.5),
           ),
         ),
       ),

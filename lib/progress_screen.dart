@@ -91,9 +91,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: const Text('My Progress', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -102,11 +102,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: SafeArea(
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                  child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
                 )
               : RefreshIndicator(
-                  color: const Color(0xFF7B5CF0),
-                  backgroundColor: const Color(0xFF1A1530),
+                  color: const Color(0xFFE8BA48),
+                  backgroundColor: const Color(0xFF17130C),
                   onRefresh: _load,
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -233,10 +233,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
               ),
             ),
-            child: const Icon(Icons.check_rounded, color: Colors.white, size: 19),
+            child: const Icon(Icons.check_rounded, color: Color(0xFF1A1200), size: 19),
           ),
           const SizedBox(width: 12),
           Expanded(

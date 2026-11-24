@@ -157,7 +157,16 @@ class ApiService {
         return "Sorry, I couldn't understand that.";
       }
 
-      return 'Something went wrong. Please try again.';
+      // Show the server's own explanation (e.g. AI key / quota problem)
+      // instead of hiding it behind a generic message.
+      try {
+        final err = jsonDecode(response.body);
+        if (err is Map && err['reply'] is String &&
+            (err['reply'] as String).trim().isNotEmpty) {
+          return err['reply'] as String;
+        }
+      } catch (_) {}
+      return 'Something went wrong (server code ${response.statusCode}). Please try again.';
     } catch (e) {
       return "Couldn't reach the server. Check your connection.";
     }
@@ -183,11 +192,6 @@ class ApiService {
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      // TEMP DEBUG — remove after diagnosing upload failure
-      print('UPLOAD >>> url=$url');
-      print('UPLOAD >>> status=${response.statusCode}');
-      print('UPLOAD >>> body=${response.body}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
@@ -198,8 +202,6 @@ class ApiService {
 
       return null;
     } catch (e) {
-      // TEMP DEBUG — remove after diagnosing upload failure
-      print('UPLOAD >>> EXCEPTION: $e');
       return null;
     }
   }
@@ -544,6 +546,39 @@ class ApiService {
 
   // Sends the transcript (+ optional webcam snapshot) and returns structured
   // feedback: {overall, body, confidence, qa[]}.
+  static Future<Map<String, dynamic>> mentorPlacementRequest(
+    String token,
+    String path, {
+    Map<String, String>? body,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mentor/$path'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: body == null ? null : jsonEncode(body),
+      ).timeout(aiTimeout);
+      if (response.statusCode == 404) {
+        throw ApiException('This Nexora feature is unavailable on the server.');
+      }
+      final data = jsonDecode(response.body);
+      if (data is Map && response.statusCode == 200) {
+        return Map<String, dynamic>.from(data);
+      }
+      throw ApiException(
+        data is Map && data['error'] is String
+            ? data['error'] as String
+            : 'Nexa could not complete the request. Please try again.',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Could not load Nexa data. Please try again.');
+    }
+  }
+
   static Future<Map<String, dynamic>> getInterviewFeedback(
     String token, {
     List<Map<String, String>> transcript = const [],
@@ -601,9 +636,44 @@ class ApiService {
     }
   }
 
+  // One live turn of the spoken interview: sends the conversation so far and
+  // gets Nexa's next spoken line back ({reply, closing}).
+  static Future<Map<String, dynamic>> interviewReply(
+    String token, {
+    required List<Map<String, String>> history,
+    required int turn,
+    int maxTurns = 6,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/mentor/interview/reply'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'history': history,
+              'turn': turn,
+              'maxTurns': maxTurns,
+            }),
+          )
+          .timeout(aiTimeout);
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      throw ApiException('Nexa could not reply. Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Nexa is taking a moment. Please try again.');
+    }
+  }
+
   static Future<List<dynamic>> searchExternalJobs(
     String token, {
-    String what = 'software developer',
+    String what = '',
     String? where,
     String country = 'in',
   }) async {
@@ -636,9 +706,18 @@ class ApiService {
         }
       }
 
-      return [];
+      if (response.statusCode == 401) {
+        throw ApiException('Session expired. Please log in again.');
+      }
+      throw ApiException(
+        'Could not fetch live jobs right now. Please try again in a moment.',
+      );
+    } on ApiException {
+      rethrow;
     } catch (e) {
-      return [];
+      throw ApiException(
+        'Server is waking up or offline. Please try again in 30 seconds.',
+      );
     }
   }
 

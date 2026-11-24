@@ -62,9 +62,9 @@ class _ResumeHistoryScreenState extends State<ResumeHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: const Text(
           'Resume History',
@@ -76,7 +76,7 @@ class _ResumeHistoryScreenState extends State<ResumeHistoryScreen> {
         child: SafeArea(
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                  child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
                 )
               : history.isEmpty
               ? Center(
@@ -97,8 +97,8 @@ class _ResumeHistoryScreenState extends State<ResumeHistoryScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  color: const Color(0xFF7B5CF0),
-                  backgroundColor: const Color(0xFF1A1530),
+                  color: const Color(0xFFE8BA48),
+                  backgroundColor: const Color(0xFF17130C),
                   onRefresh: loadHistory,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(20),
@@ -142,12 +142,12 @@ class _ResumeHistoryScreenState extends State<ResumeHistoryScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: const Color(
-                                    0xFF7B5CF0,
+                                    0xFFE8BA48,
                                   ).withValues(alpha: 0.15),
                                 ),
                                 child: const Icon(
                                   Icons.description_outlined,
-                                  color: Color(0xFFB06AB3),
+                                  color: Color(0xFFC48A0A),
                                   size: 20,
                                 ),
                               ),

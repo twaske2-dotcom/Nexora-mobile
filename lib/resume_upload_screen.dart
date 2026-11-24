@@ -134,9 +134,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: const Text('Upload Resume', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -157,7 +157,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: const Color(0xFF7B5CF0).withValues(alpha: 0.4),
+                        color: const Color(0xFFE8BA48).withValues(alpha: 0.4),
                         width: 1.5,
                       ),
                     ),
@@ -169,11 +169,11 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                              colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                             ),
                           ),
                           child: const Icon(Icons.upload_file_rounded,
-                              color: Colors.white, size: 30),
+                              color: Color(0xFF1A1200), size: 30),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -219,7 +219,7 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                                   Colors.white.withValues(alpha: 0.08),
                                   Colors.white.withValues(alpha: 0.08),
                                 ]
-                              : const [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                              : const [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -230,14 +230,14 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
                                 height: 22,
                                 width: 22,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2.2, color: Colors.white),
+                                    strokeWidth: 2.2, color: Color(0xFF1A1200)),
                               )
                             : Text(
                                 uploaded ? 'Upload a different resume' : 'Upload Resume',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: selectedFile == null ? Colors.white54 : const Color(0xFF1A1200),
                                 ),
                               ),
                       ),
@@ -318,15 +318,15 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
         decoration: BoxDecoration(
           gradient: highlight
               ? LinearGradient(colors: [
-                  const Color(0xFF7B5CF0).withValues(alpha: 0.18),
-                  const Color(0xFFB06AB3).withValues(alpha: 0.12),
+                  const Color(0xFFE8BA48).withValues(alpha: 0.18),
+                  const Color(0xFFC48A0A).withValues(alpha: 0.12),
                 ])
               : null,
           color: highlight ? null : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: highlight
-                ? const Color(0xFF7B5CF0).withValues(alpha: 0.3)
+                ? const Color(0xFFE8BA48).withValues(alpha: 0.3)
                 : Colors.white.withValues(alpha: 0.08),
           ),
         ),
@@ -337,9 +337,9 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF7B5CF0).withValues(alpha: 0.18),
+                color: const Color(0xFFE8BA48).withValues(alpha: 0.18),
               ),
-              child: Icon(icon, color: const Color(0xFFB06AB3), size: 19),
+              child: Icon(icon, color: const Color(0xFFC48A0A), size: 19),
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -55,9 +55,9 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1530),
+        backgroundColor: const Color(0xFF17130C),
         elevation: 0,
         title: Text(
           widget.jobTitle,
@@ -69,7 +69,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         child: SafeArea(
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF7B5CF0)),
+                  child: CircularProgressIndicator(color: Color(0xFFE8BA48)),
                 )
               : errorText != null
               ? Center(
@@ -166,7 +166,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                           child: Ink(
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                                colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                               ),
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -175,7 +175,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                               child: const Text(
                                 'Write a cover letter for this role',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Color(0xFF1A1200),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),

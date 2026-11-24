@@ -66,7 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF7B5CF0), width: 1.6),
+        borderSide: const BorderSide(color: Color(0xFFE8BA48), width: 1.6),
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     );
@@ -75,16 +75,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF7B5CF0),
+        backgroundColor: const Color(0xFFE8BA48),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const HelpScreen()),
           );
         },
-        child: const Icon(Icons.auto_awesome, color: Colors.white),
+        child: const Icon(Icons.auto_awesome, color: Color(0xFF1A1200)),
       ),
       body: AppBackground(
         child: SafeArea(
@@ -109,9 +109,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFF151022),
+                      color: const Color(0xFF17130C),
                       border: Border.all(
-                        color: const Color(0xFF2A2244),
+                        color: const Color(0xFF3A2F17),
                         width: 1,
                       ),
                     ),
@@ -193,7 +193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         initialValue: selectedRole,
-                        dropdownColor: const Color(0xFF1A1530),
+                        dropdownColor: const Color(0xFF17130C),
                         style: const TextStyle(color: Colors.white),
                         decoration: _fieldDecoration(
                           'I am a...',
@@ -229,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Ink(
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF7B5CF0), Color(0xFFB06AB3)],
+                                colors: [Color(0xFFE8BA48), Color(0xFFC48A0A)],
                               ),
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       width: 22,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.2,
-                                        color: Colors.white,
+                                        color: Color(0xFF1A1200),
                                       ),
                                     )
                                   : const Text(
@@ -249,7 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.white,
+                                        color: Color(0xFF1A1200),
                                       ),
                                     ),
                             ),

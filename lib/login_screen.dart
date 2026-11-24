@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF7B5CF0), width: 1.6),
+        borderSide: const BorderSide(color: Color(0xFFE8BA48), width: 1.6),
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     );
@@ -80,16 +80,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFF0A0804),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF7B5CF0),
+        backgroundColor: const Color(0xFFE8BA48),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const HelpScreen()),
           );
         },
-        child: const Icon(Icons.auto_awesome, color: Colors.white),
+        child: const Icon(Icons.auto_awesome, color: Color(0xFF1A1200)),
       ),
       body: AppBackground(
         child: SafeArea(
@@ -108,15 +108,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 78,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF151022),
+                        color: const Color(0xFF17130C),
                         border: Border.all(
-                          color: const Color(0xFF2A2244),
+                          color: const Color(0xFF3A2F17),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(
-                              0xFF7B5CF0,
+                              0xFFE8BA48,
                             ).withValues(alpha: 0.35),
                             blurRadius: 24,
                             spreadRadius: 1,
@@ -217,8 +217,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFF7B5CF0),
-                                    Color(0xFFB06AB3),
+                                    Color(0xFFE8BA48),
+                                    Color(0xFFC48A0A),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
@@ -231,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         width: 22,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2.2,
-                                          color: Colors.white,
+                                          color: Color(0xFF1A1200),
                                         ),
                                       )
                                     : const Text(
@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                                          color: Color(0xFF1A1200),
                                           letterSpacing: 0.4,
                                         ),
                                       ),
@@ -273,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text(
                           'Register',
                           style: TextStyle(
-                            color: Color(0xFFB06AB3),
+                            color: Color(0xFFC48A0A),
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -300,7 +300,7 @@ class _NexoraLogoPainter extends CustomPainter {
     // Concept: Paint object with a gradient shader for the stroke color
     final paint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFF8B6FF5), Color(0xFFC77FC0)],
+        colors: [Color(0xFFF4D67A), Color(0xFFF4D67A)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.5
