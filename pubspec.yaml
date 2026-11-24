@@ -21,6 +21,8 @@ dependencies:
   flutter_tts: ^4.2.0
   speech_to_text: ^7.3.0
   permission_handler: ^11.3.1
+  flutter_local_notifications: ^19.4.0
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

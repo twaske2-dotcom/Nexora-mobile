@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_background.dart';
 import 'help_screen.dart';
 import 'nexora_theme.dart';
+import 'notification_service.dart';
 
 /// Settings page opened from the gear icon on the dashboard.
 /// Keeps things simple: AI help, about, and log out.
@@ -39,6 +40,8 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
+              const _NotificationToggle(),
+              const SizedBox(height: 12),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 title: 'About Nexora',
@@ -65,6 +68,75 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationToggle extends StatefulWidget {
+  const _NotificationToggle();
+
+  @override
+  State<_NotificationToggle> createState() => _NotificationToggleState();
+}
+
+class _NotificationToggleState extends State<_NotificationToggle> {
+  bool _on = true;
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.isEnabled().then((v) {
+      if (mounted) setState(() => _on = v);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: NexoraColors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: NexoraColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: NexoraColors.goldGradient,
+            ),
+            child: const Icon(Icons.notifications_active_outlined,
+                color: NexoraColors.onGold, size: 20),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nexa reminders',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700)),
+                SizedBox(height: 3),
+                Text('Daily career tips and application follow-ups',
+                    style: TextStyle(color: Colors.white54, fontSize: 12.5)),
+              ],
+            ),
+          ),
+          Switch(
+            value: _on,
+            activeThumbColor: NexoraColors.gold,
+            onChanged: (v) {
+              setState(() => _on = v);
+              NotificationService.setEnabled(v);
+            },
+          ),
+        ],
       ),
     );
   }

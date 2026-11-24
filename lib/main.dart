@@ -4,11 +4,14 @@ import 'api_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 import 'nexora_theme.dart';
+import 'notification_service.dart';
 
 // Concept: entry point of every Flutter app
 void main() {
-  // App khulte hi soye hue server ko jaga do (fire-and-forget).
-  // Jab tak user login screen dekhta/type karta hai, server ready ho jaata hai.
+  WidgetsFlutterBinding.ensureInitialized();
+  NotificationService.init();
+  // Wake the sleeping server as soon as the app opens (fire-and-forget),
+  // so it is ready by the time the user finishes the login screen.
   ApiService.wakeUpServer();
   runApp(const MyApp());
 }

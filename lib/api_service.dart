@@ -16,28 +16,28 @@ class ApiService {
   static const String baseUrl =
       'https://resumeapp-backend-uo3n.onrender.com/api';
 
-  // Render ka free server so jaata hai; jaagne mein ~50s lag sakte hain,
-  // isliye timeout lamba rakha hai warna pehli request "network error" degi.
+  // The free Render server sleeps when idle and can take ~50s to wake up,
+  // so the timeout is long; otherwise the first request fails with a network error.
   static const Duration requestTimeout = Duration(seconds: 60);
 
-  // File upload + PDF parsing thoda aur time le sakta hai.
+  // File upload and PDF parsing can take a little longer.
   static const Duration uploadTimeout = Duration(seconds: 90);
 
-  // AI (Gemini) calls generation karte hain — cover letter/feedback/chat.
-  // Backend ka read timeout 60s hai + Render cold start, isliye yaha thoda
-  // aur buffer rakha hai warna slow reply "timeout" ban jaati.
+  // AI (Gemini) calls generate text: cover letter, feedback, chat.
+  // The backend read timeout is 60s plus a possible Render cold start,
+  // so there is extra buffer here to keep slow replies from timing out.
   static const Duration aiTimeout = Duration(seconds: 120);
 
-  // App khulte hi ye call hoti hai. Render ka soya hua server jaga deti hai
-  // taaki jab tak user login type kare, server ready ho jaaye.
-  // Fire-and-forget: fail ho to bhi chup-chaap ignore, koi error nahi.
+  // Called when the app opens. Wakes the sleeping Render server so it is
+  // ready by the time the user finishes typing their login.
+  // Fire-and-forget: failures are ignored silently.
   static Future<void> wakeUpServer() async {
     try {
       await http
           .get(Uri.parse('$baseUrl/health'))
           .timeout(const Duration(seconds: 90));
     } catch (_) {
-      // Ignore - ye sirf warm-up hai
+      // Ignore - this is only a warm-up
     }
   }
 
@@ -168,7 +168,7 @@ class ApiService {
       } catch (_) {}
       return 'Something went wrong (server code ${response.statusCode}). Please try again.';
     } catch (e) {
-      return "Couldn't reach the server. Check your connection.";
+      return "Couldn't reach the server. Check your internet connection. If you are online, the server may be waking up, so try again in a minute.";
     }
   }
 
@@ -383,9 +383,9 @@ class ApiService {
     }
   }
 
-  // Cover letter generate karta hai. Success pe letter return, warna
-  // backend ka asli error message ApiException mein throw karta hai taaki
-  // screen "upload a resume" jaisa galat message na dikhaye.
+  // Generates a cover letter. Returns the letter on success; otherwise throws
+  // the backend's real error message as an ApiException so the screen does not
+  // show a misleading "upload a resume" message.
   static Future<String> generateCoverLetter(
     String token,
     String jobTitle,
@@ -658,7 +658,7 @@ class ApiService {
               'maxTurns': maxTurns,
             }),
           )
-          .timeout(aiTimeout);
+          .timeout(const Duration(seconds: 40));
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data is Map) {
         return Map<String, dynamic>.from(data);
@@ -825,6 +825,93 @@ class ApiService {
       return [];
     } catch (e) {
       return [];
+    }
+  }
+
+  // Moves an application to a new stage and/or saves notes.
+  static Future<bool> updateApplication(
+    String token,
+    int id, {
+    String? status,
+    String? notes,
+  }) async {
+    try {
+      final response = await http
+          .patch(
+            Uri.parse('$baseUrl/applications/$id'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              if (status != null) 'status': status,
+              if (notes != null) 'notes': notes,
+            }),
+          )
+          .timeout(requestTimeout);
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Removes an application from the tracker.
+  static Future<bool> deleteApplication(String token, int id) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/applications/$id'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(requestTimeout);
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Nexa explains why a live job matches the resume and plans the missing skills.
+  // Returns {why: String, plan: List<String>}. Throws ApiException with a readable message.
+  static Future<Map<String, dynamic>> jobInsight(
+    String token, {
+    required String title,
+    required String company,
+    required String description,
+    required List<String> matched,
+    required List<String> missing,
+    num? match,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/mentor/job-insight'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'title': title,
+              'company': company,
+              'description': description,
+              'matched': matched,
+              'missing': missing,
+              'match': match,
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      if (data is Map && data['error'] is String) {
+        throw ApiException(data['error'] as String);
+      }
+      throw ApiException('Nexa could not explain this job. Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException(
+          'Could not reach the server. Check your connection and try again.');
     }
   }
 }

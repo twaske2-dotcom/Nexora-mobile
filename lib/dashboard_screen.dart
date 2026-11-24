@@ -15,6 +15,7 @@ import 'external_jobs_screen.dart';
 import 'progress_screen.dart';
 import 'help_screen.dart';
 import 'nexora_logo.dart';
+import 'notification_service.dart';
 import 'login_screen.dart';
 import 'nexora_ascend_screen.dart';
 import 'settings_screen.dart';
@@ -39,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _showCached(); // instant: last known matches appear immediately
+    NotificationService.refresh(widget.token); // Nexa reminders (local)
     loadData(); // then refresh live in the background
   }
 

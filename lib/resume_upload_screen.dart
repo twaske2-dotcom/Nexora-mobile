@@ -20,8 +20,8 @@ class _ResumeUploadScreenState extends State<ResumeUploadScreen> {
   bool isUploading = false;
 
   // Concept: after a successful upload we only show the "what next" tiles.
-  // Preview / skills / quality / AI feedback ab yaha inline nahi dikhte —
-  // wo apne-apne feature screen mein click karne pe khulte hain.
+  // Preview, skills, quality and AI feedback are no longer shown inline here;
+  // each opens in its own feature screen.
   bool uploaded = false;
 
   // Kept only to prefill the resume builder — never shown on this screen.

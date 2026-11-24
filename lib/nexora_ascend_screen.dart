@@ -71,7 +71,7 @@ class NexoraAscendScreen extends StatelessWidget {
               icon: Icons.workspace_premium_rounded,
               title: 'Career Pulse',
               subtitle:
-                  'Your insider playbook — trending skills, where to learn (with links), what to follow daily, and secrets top-college students know. All tailored to YOUR resume.',
+                  'Trending skills, learning links, what to follow, and insider tips, based on your resume.',
               onTap: () => _open(context, CareerPulseScreen(token: token)),
             ),
             const SizedBox(height: 14),
@@ -79,7 +79,7 @@ class NexoraAscendScreen extends StatelessWidget {
               icon: Icons.route_rounded,
               title: 'My Roadmap',
               subtitle:
-                  'A step-by-step path built from your resume — Foundation, Growth, Top-tier, plus insider resources.',
+                  'A step-by-step path from foundation to top-tier, built from your resume.',
               onTap: () => _open(context, NexoraRoadmapScreen(token: token)),
             ),
             const SizedBox(height: 14),
@@ -87,7 +87,7 @@ class NexoraAscendScreen extends StatelessWidget {
               icon: Icons.forum_rounded,
               title: 'Learn with Nexa',
               subtitle:
-                  'Ask anything about your career, skills or interviews. Nexa answers based on your resume.',
+                  'Ask about careers, skills or interviews. Answers are based on your resume.',
               onTap: () => _open(context, NexoraChatScreen(token: token)),
             ),
             const SizedBox(height: 14),
@@ -95,7 +95,7 @@ class NexoraAscendScreen extends StatelessWidget {
               icon: Icons.military_tech_rounded,
               title: 'Mock Placement',
               subtitle:
-                  'A full 3-round drive tuned to your resume — Aptitude, a Technical round with a real coding task, and a video-call interview. Ends with a report that explains every answer.',
+                  'Aptitude, technical with a coding task, and a live video interview, followed by a detailed report.',
               onTap: () => _open(context, MockPlacementScreen(token: token)),
             ),
           ],
@@ -125,8 +125,12 @@ class _AscendCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: ascendGold.withValues(alpha: 0.045),
-          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF221A0C), Color(0xFF15110A)],
+          ),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFF4B4026)),
         ),
         child: Row(
@@ -135,7 +139,7 @@ class _AscendCard extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(14),
                 gradient: ascendGradient,
               ),
               child: Icon(icon, color: const Color(0xFF231A07), size: 22),

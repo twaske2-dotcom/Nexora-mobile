@@ -496,6 +496,17 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                       ),
                     ],
 
+                    const SizedBox(height: 18),
+                    _NexaInsight(
+                      token: widget.token,
+                      title: title,
+                      company: company,
+                      description: description,
+                      matched: matchedSkills,
+                      missing: missingSkills,
+                      match: match,
+                    ),
+
                     if (description.isNotEmpty) ...[
                       const SizedBox(height: 22),
                       const Text(
@@ -588,10 +599,23 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
 
                     const SizedBox(height: 10),
 
-                    const Center(
-                      child: Text(
-                        'Source: Adzuna job listing',
-                        style: TextStyle(color: Colors.white30, fontSize: 10.5),
+                    Center(
+                      child: InkWell(
+                        onTap: () => launchUrl(
+                          Uri.parse('https://www.adzuna.in'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Text(
+                            'Jobs by Adzuna',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1234,6 +1258,166 @@ class _ExternalJobsScreenState extends State<ExternalJobsScreen> {
                     ),
                   ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Explain with Nexa": why this live job fits the resume, plus a plan for gaps.
+class _NexaInsight extends StatefulWidget {
+  final String token;
+  final String title;
+  final String company;
+  final String description;
+  final List<String> matched;
+  final List<String> missing;
+  final num? match;
+
+  const _NexaInsight({
+    required this.token,
+    required this.title,
+    required this.company,
+    required this.description,
+    required this.matched,
+    required this.missing,
+    required this.match,
+  });
+
+  @override
+  State<_NexaInsight> createState() => _NexaInsightState();
+}
+
+class _NexaInsightState extends State<_NexaInsight> {
+  bool _loading = false;
+  String? _error;
+  String _why = '';
+  List<String> _plan = [];
+
+  Future<void> _run() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await ApiService.jobInsight(
+        widget.token,
+        title: widget.title,
+        company: widget.company,
+        description: widget.description,
+        matched: widget.matched,
+        missing: widget.missing,
+        match: widget.match,
+      );
+      if (!mounted) return;
+      setState(() {
+        _why = (data['why'] ?? '').toString();
+        _plan = [
+          for (final step in (data['plan'] is List ? data['plan'] as List : []))
+            step.toString(),
+        ];
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFE8BA48);
+    final done = _why.isNotEmpty || _plan.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: gold.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: gold.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: gold, size: 18),
+              SizedBox(width: 8),
+              Text('Nexa\u2019s take',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (!done && !_loading)
+            const Text(
+              'See why this job fits your resume and get a short plan for the skills you are missing.',
+              style: TextStyle(color: Colors.white60, fontSize: 12.5, height: 1.45),
+            ),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: gold),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Nexa is reading the job\u2026',
+                      style: TextStyle(color: Colors.white60, fontSize: 12.5)),
+                ],
+              ),
+            ),
+          if (_error != null)
+            Text(_error!,
+                style: const TextStyle(color: Color(0xFFE07A6A), fontSize: 12.5)),
+          if (_why.isNotEmpty) ...[
+            const Text('Why you match',
+                style: TextStyle(
+                    color: gold, fontSize: 12, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(_why,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13.5, height: 1.5)),
+          ],
+          if (_plan.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Your plan for the gaps',
+                style: TextStyle(
+                    color: gold, fontSize: 12, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            for (final (i, step) in _plan.indexed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${i + 1}. ',
+                        style: const TextStyle(
+                            color: gold, fontWeight: FontWeight.w700)),
+                    Expanded(
+                      child: Text(step,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13.5, height: 1.45)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (!_loading) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _run,
+              icon: Icon(done || _error != null ? Icons.refresh : Icons.bolt, size: 18),
+              label: Text(done || _error != null ? 'Try again' : 'Explain with Nexa'),
+              style: TextButton.styleFrom(foregroundColor: gold, padding: EdgeInsets.zero),
+            ),
+          ],
         ],
       ),
     );

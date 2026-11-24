@@ -115,7 +115,7 @@ class _NexoraInterviewScreenState extends State<NexoraInterviewScreen>
         orElse: () => cameras.first,
       );
       final controller =
-          CameraController(front, ResolutionPreset.low, enableAudio: true);
+          CameraController(front, ResolutionPreset.low, enableAudio: false);
       await controller.initialize();
       if (!mounted) {
         controller.dispose();
@@ -221,7 +221,7 @@ class _NexoraInterviewScreenState extends State<NexoraInterviewScreen>
       _speaking = true;
     });
     try {
-      await _tts.speak(line);
+      await _tts.speak(line).timeout(const Duration(seconds: 45));
     } catch (_) {}
     if (_ended || !mounted) return;
     setState(() => _speaking = false);

@@ -101,7 +101,7 @@
   function render(){
     let voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
     if (mamOnly.checked) voices = voices.filter(isFemale);
-    // Indian English pehle, phir online/natural, phir baaki
+    // Indian English first, then online/natural voices, then the rest
     voices.sort((a,b)=>{
       const s = v => (/en-IN/i.test(v.lang)?0:2) + (/online|natural/i.test(v.name)?0:1);
       return s(a)-s(b);

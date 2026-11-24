@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Nexora ka reusable "aurora" background.
 /// Dark base + dheere-dheere ghoomte purple/pink glow blobs.
-/// Koi video/asset nahi - pure Flutter, smooth aur halka.
+/// No video or image assets: pure Flutter, smooth and lightweight.
 class AppBackground extends StatefulWidget {
   final Widget child;
 
@@ -91,7 +91,7 @@ class _AppBackgroundState extends State<AppBackground>
     );
   }
 
-  // Ek soft glowing circle jo alignment (ax, ay) pe rehta hai (-1..1)
+  // A soft glowing circle positioned at alignment (ax, ay), each in -1..1
   Widget _glow({
     required Color color,
     required double size,
